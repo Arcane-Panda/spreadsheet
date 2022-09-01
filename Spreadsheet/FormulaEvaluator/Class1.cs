@@ -25,7 +25,7 @@ namespace FormulaEvaluator
             foreach(string t in tokens)
             {
                 
-                if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+")
+                if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+"))
                 {
                     if (operatorStack.Peek() == "*" || operatorStack.Peek() == "/")
                     {
