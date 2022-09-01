@@ -27,7 +27,7 @@ namespace FormulaEvaluator
                 
                 if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+"))
                 {
-                    if (operatorStack.Peek() == "*" || operatorStack.Peek() == "/")
+                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
                     {
                         int result = performOperation(valueStack, variableEvaluator(t), operatorStack);
                         valueStack.Push(result);
@@ -37,7 +37,7 @@ namespace FormulaEvaluator
                 }
                 else if (int.TryParse(t, out int tokenResult))
                 {
-                    if (operatorStack.Peek() == "*" || operatorStack.Peek() == "/")
+                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
                     {
                         int result = performOperation(valueStack, tokenResult, operatorStack);
                         valueStack.Push(result);
@@ -47,7 +47,7 @@ namespace FormulaEvaluator
                 }
                 else if (t == "+" || t == "-")
                 {
-                    if (operatorStack.Peek() == "+" || operatorStack.Peek() == "-")
+                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "+" || operatorStack.Peek() == "-"))
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
