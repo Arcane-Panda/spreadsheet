@@ -7,24 +7,28 @@ namespace FormulaEvaluator
     /// </summary>
     public static class Evaluator
     {
-        // TODO: Follow the PS1 instructions
 
         public delegate int Lookup(String v);
         
         public static int Evaluate(String exp, Lookup variableEvaluator)
         {
+            //make sure inputs aren't null
+            if (exp == null || variableEvaluator == null)
+            {
+                throw new ArgumentNullException("Arguments cannot be null");
+            }
             //Declare stacks to be used to evaluate expression
             Stack<int> valueStack = new Stack<int>();
             Stack<String> operatorStack = new Stack<String>();
 
             //Trim white space and split the expression to be evaluated into tokens
-            exp = exp.Trim();
+            exp = String.Concat(exp.Where(c => !Char.IsWhiteSpace(c)));
             string[] tokens = Regex.Split(exp, "(\\()|(\\))|(-)|(\\+)|(\\*)|(/)");
 
             //evaluate each token according the assignment algorithm
             foreach(string t in tokens)
             {
-                
+
                 if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+"))
                 {
                     if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
@@ -74,12 +78,17 @@ namespace FormulaEvaluator
                     if (operatorStack.Peek() == "(")
                         operatorStack.Pop();
 
-                    if (operatorStack.Peek() == "*" || operatorStack.Peek() == "/")
+                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
                     }
 
+                }
+                //if the token isn't just an empty string, we throw an expection because its something invalid
+                else if(t != "")
+                {
+                    throw new ArgumentException("Unknown token");
                 }
             }
 
@@ -97,11 +106,11 @@ namespace FormulaEvaluator
         /// 
         /// In this instance, one of the values comes from the current infix stack of values while the second value is the one currently being read
         /// </summary>
-        /// <param name="valueStack"></param>
-        /// <param name="val2"></param>
-        /// <param name="opStack"></param>
+        /// <param name="valueStack"> the stack of values to pull from</param>
+        /// <param name="val2">the value currently being read</param>
+        /// <param name="opStack">the stack of operators</param>
         /// <returns>The result of the operation</returns>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentException"> Throws an exception when there aren't enough values to operate on (i.e the expression was malformed)</exception>
         private static int performOperation(Stack<int> valueStack, int val2, Stack<String> opStack)
         {
             if (valueStack.Count < 1)
@@ -133,17 +142,17 @@ namespace FormulaEvaluator
         /// 
         /// In this instance, BOTH of the values come from the current infix stack of values 
         /// </summary>
-        /// <param name="valueStack"></param>
-        /// <param name="opStack"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
+        /// <param name="valueStack"> the stack of values to pull from</param>
+        /// <param name="opStack">the stack of operators</param>
+        /// <returns>The result of the operation</returns>
+        /// <exception cref="ArgumentException"> Throws an exception when there aren't enough values to operate on (i.e the expression was malformed)</exception>
         private static int performOperation(Stack<int> valueStack, Stack<String> opStack)
         {
             if (valueStack.Count < 2)
                 throw new ArgumentException("Tried to perform an operation on a malformed expression");
 
-            int val1 = valueStack.Pop();
             int val2 = valueStack.Pop();
+            int val1 = valueStack.Pop();
             string op = opStack.Pop();
             switch (op)
             {

@@ -7,13 +7,22 @@ namespace EvaluatorTester
         
         static void Main(string[] args)
         {
+            try
+            {
+                Console.WriteLine(Evaluator.Evaluate("(2 + A6) * 5 + 2", noVariables));
+            }
+            catch (Exception e)
+            {
 
-            Console.WriteLine(Evaluator.Evaluate("10 + 8 * 5 + 4", noVariables));
+                Console.WriteLine(e.ToString());
+                Console.ReadLine();
+            }
+            
         }
 
         public static int noVariables(String v)
         {
-            return 0;        
+            return 7;        
         }
     }
 }
