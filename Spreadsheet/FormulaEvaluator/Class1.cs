@@ -150,7 +150,8 @@ namespace FormulaEvaluator
                 case "*":
                     return val1 * val2;
                 case "/":
-                    throw new ArgumentException("Division by 0");
+                    if(val2 == 0)
+                        throw new ArgumentException("Division by 0");
                     return val1 / val2;
                 case "+":
                     return val1 + val2;
