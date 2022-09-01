@@ -31,7 +31,7 @@ namespace FormulaEvaluator
 
                 if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+"))
                 {
-                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) //operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
                     {
                         int result = performOperation(valueStack, variableEvaluator(t), operatorStack);
                         valueStack.Push(result);
@@ -41,7 +41,7 @@ namespace FormulaEvaluator
                 }
                 else if (int.TryParse(t, out int tokenResult))
                 {
-                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) //operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
                     {
                         int result = performOperation(valueStack, tokenResult, operatorStack);
                         valueStack.Push(result);
@@ -51,7 +51,7 @@ namespace FormulaEvaluator
                 }
                 else if (t == "+" || t == "-")
                 {
-                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "+" || operatorStack.Peek() == "-"))
+                    if ((operatorStack.isOnTop("+") || operatorStack.isOnTop("-")))//(operatorStack.Count > 0 && (operatorStack.Peek() == "+" || operatorStack.Peek() == "-"))
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
@@ -68,17 +68,17 @@ namespace FormulaEvaluator
                 }
                 else if (t == ")")
                 {
-                    if (operatorStack.Peek() == "+" || operatorStack.Peek() == "-")
+                    if (operatorStack.isOnTop("+") || operatorStack.isOnTop("-")) //operatorStack.Peek() == "+" || operatorStack.Peek() == "-")
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
                     }
 
                     //check that there is an opening (
-                    if (operatorStack.Peek() == "(")
+                    if (operatorStack.isOnTop("(")) //operatorStack.Peek() == "(")
                         operatorStack.Pop();
 
-                    if (operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) //operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
