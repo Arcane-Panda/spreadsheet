@@ -93,11 +93,23 @@ namespace FormulaEvaluator
             }
 
             if (operatorStack.Count == 0)
-                return valueStack.Pop();
+            {
+                if (valueStack.Count == 1)
+                    return valueStack.Pop();
+                else
+                    throw new ArgumentException("Malformed expression");
+            }    
             else
             {
-                int result = performOperation(valueStack, operatorStack);
-                return result;
+                if(operatorStack.Count == 1 && valueStack.Count == 2)
+                {
+                    int result = performOperation(valueStack, operatorStack);
+                    return result;
+                } else
+                {
+                    throw new ArgumentException("Malformed expression");
+                }
+                
             }
         }
 
