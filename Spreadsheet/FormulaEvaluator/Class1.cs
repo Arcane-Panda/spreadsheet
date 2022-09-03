@@ -3,13 +3,25 @@
 namespace FormulaEvaluator
 {
     /// <summary>
-    /// 
+    /// This static class is used to evaluate integer infix expressions
     /// </summary>
     public static class Evaluator
     {
 
         public delegate int Lookup(String v);
-        
+
+        /// <summary>
+        /// This method takes in an integer infix expression and evaluates it correctly, assuming that the original expression is well formulated.
+        /// 
+        /// Infix expressions can also include variables with the form of any number of letters followed by any number of numbers.
+        /// To evaluated variables, it uses a delegate of the form int Lookup(String v);
+        /// 
+        /// </summary>
+        /// <param name="exp">The expression to be evaluated</param>
+        /// <param name="variableEvaluator">delegate method</param>
+        /// <returns>The integer result of the expression</returns>
+        /// <exception cref="ArgumentNullException">If either of the arguments are null</exception>
+        /// <exception cref="ArgumentException">If the given expression is not well formulated</exception>
         public static int Evaluate(String exp, Lookup variableEvaluator)
         {
             //make sure inputs aren't null
@@ -29,9 +41,9 @@ namespace FormulaEvaluator
             foreach(string t in tokens)
             {
 
-                if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+"))
+                if (Regex.IsMatch(t, "[a-zA-Z]+[0-9]+")) //variable
                 {
-                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) //operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) 
                     {
                         int result = performOperation(valueStack, variableEvaluator(t), operatorStack);
                         valueStack.Push(result);
@@ -39,9 +51,9 @@ namespace FormulaEvaluator
                     else
                         valueStack.Push(variableEvaluator(t));
                 }
-                else if (int.TryParse(t, out int tokenResult))
+                else if (int.TryParse(t, out int tokenResult)) //integer
                 {
-                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) //operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) 
                     {
                         int result = performOperation(valueStack, tokenResult, operatorStack);
                         valueStack.Push(result);
@@ -49,36 +61,38 @@ namespace FormulaEvaluator
                     else
                         valueStack.Push(tokenResult);
                 }
-                else if (t == "+" || t == "-")
+                else if (t == "+" || t == "-") //operator
                 {
-                    if ((operatorStack.isOnTop("+") || operatorStack.isOnTop("-")))//(operatorStack.Count > 0 && (operatorStack.Peek() == "+" || operatorStack.Peek() == "-"))
+                    if ((operatorStack.isOnTop("+") || operatorStack.isOnTop("-")))
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
                     }
                     operatorStack.Push(t);
                 }
-                else if (t == "*" || t == "/")
+                else if (t == "*" || t == "/")//operator
                 {
                     operatorStack.Push(t);
                 }
-                else if (t == "(")
+                else if (t == "(")//open parenthesis
                 {
                     operatorStack.Push(t);
                 }
-                else if (t == ")")
+                else if (t == ")") //close parenthesis
                 {
-                    if (operatorStack.isOnTop("+") || operatorStack.isOnTop("-")) //operatorStack.Peek() == "+" || operatorStack.Peek() == "-")
+                    if (operatorStack.isOnTop("+") || operatorStack.isOnTop("-")) 
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
                     }
 
                     //check that there is an opening (
-                    if (operatorStack.isOnTop("(")) //operatorStack.Peek() == "(")
+                    if (operatorStack.isOnTop("("))
                         operatorStack.Pop();
+                    else
+                        throw new ArgumentException("Malformed expression, missing opening parenthesis");
 
-                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) //operatorStack.Count > 0 && (operatorStack.Peek() == "*" || operatorStack.Peek() == "/"))
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/")) 
                     {
                         int result = performOperation(valueStack, operatorStack);
                         valueStack.Push(result);
@@ -92,6 +106,7 @@ namespace FormulaEvaluator
                 }
             }
 
+            //once we've evaluated the whole expression, either return the final value, or perform the final operation and return
             if (operatorStack.Count == 0)
             {
                 if (valueStack.Count == 1)
@@ -185,8 +200,18 @@ namespace FormulaEvaluator
         }
     }
 
+    /// <summary>
+    /// Provides additional extensions for the stack class
+    /// </summary>
     public static class StackExtensions
     {
+        /// <summary>
+        /// Checks if a given target is at the top of a stack
+        /// </summary>
+        /// <typeparam name="T">Generic type</typeparam>
+        /// <param name="stack">stack to be checked</param>
+        /// <param name="target">search target</param>
+        /// <returns></returns>
         public static bool isOnTop<T>(this Stack<T> stack, T target)
         {
             return stack.Count > 0 && stack.Peek().Equals(target);

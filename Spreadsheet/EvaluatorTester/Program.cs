@@ -9,7 +9,7 @@ namespace EvaluatorTester
         {
             try
             {
-                Console.WriteLine(Evaluator.Evaluate("(2 + A6) * 5 + 2 *", noVariables));
+                Console.WriteLine(Evaluator.Evaluate("5+5)", noVariables));
             }
             catch (Exception e)
             {
