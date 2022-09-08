@@ -214,6 +214,7 @@ namespace FormulaEvaluator
         /// <returns></returns>
         public static bool isOnTop<T>(this Stack<T> stack, T target)
         {
+            
             return stack.Count > 0 && stack.Peek().Equals(target);
         }
     }
