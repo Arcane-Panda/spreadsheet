@@ -73,7 +73,17 @@ namespace DevelopmentTests
             t.ReplaceDependees("y", new HashSet<string>());
         }
 
-
+        /// <summary>
+        /// Adding an existing dependency should not modify the DG
+        /// </summary>
+        [TestMethod()]
+        public void AddExistingTest()
+        {
+            DependencyGraph t = new DependencyGraph();
+            t.AddDependency("x", "y");
+            t.AddDependency("x", "y");
+            Assert.AreEqual(t.Size, 1);      
+        }
 
         ///<summary>
         ///It should be possibe to have more than one DG at a time.

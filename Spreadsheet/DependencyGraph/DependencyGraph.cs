@@ -36,7 +36,14 @@ namespace SpreadsheetUtilities
 
 
 
-    ///Internally, each node
+    ///Internally, each node is contained as a key in either the Dependents or Dependees dictionary, or both.
+    ///
+    /// The incoming edges of each node are stored in the value associated with the key in the 
+    ///Dependees dictionaries, in the form of a list.
+    ///
+    ///The outgoing edges of each node are stored in the value associated with the key in the 
+    ///Dependents dictionaries, in the form of a list.
+    ///
     /// </summary>
     public class DependencyGraph
     {
@@ -225,12 +232,12 @@ namespace SpreadsheetUtilities
             //Remove all existing ordered pairs with s, if they exist
             if (Dependents.ContainsKey(s))
             {
+                //uses an additional list in order to not be modifiying Dependents[s] during the loop
                 List<string> dependentsToRemove = new();
                 foreach (string r in Dependents[s])
                 {
                     dependentsToRemove.Add(r);
                 }
-
                 foreach (string r in dependentsToRemove)
                 { 
                     RemoveDependency(s, r);
@@ -243,7 +250,6 @@ namespace SpreadsheetUtilities
             }
         }
 
-
         /// <summary>
         /// Removes all existing ordered pairs of the form (r,s).  Then, for each 
         /// t in newDependees, adds the ordered pair (t,s).
@@ -253,22 +259,18 @@ namespace SpreadsheetUtilities
             //Remove all existing ordered pairs (r,s), if they exist
             if (Dependees.ContainsKey(s))
             {
+                //uses an additional list in order to not be modifiying Dependents[s] during the loop
                 List<string> dependeesToRemove = new();
                 foreach (string r in Dependees[s])
                 {
                     dependeesToRemove.Add(r);
                 }
-
                 foreach (string r in dependeesToRemove)
                 {
                     RemoveDependency(r, s);
                 }
             }
             //add all the new dependencies
-          /*  if (newDependees.Count() == 0)
-            {
-                Dependees.Add(s, new List<string>());
-            }*/
             foreach (string t in newDependees)
             {
                 AddDependency(t, s);
