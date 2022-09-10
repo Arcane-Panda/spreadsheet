@@ -4,11 +4,6 @@
 //               (Clarified meaning of dependent and dependee.)
 //               (Clarified names in solution/project structure.)
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace SpreadsheetUtilities
 {
 
@@ -38,14 +33,25 @@ namespace SpreadsheetUtilities
     //     dependees("b") = {"a"}
     //     dependees("c") = {"a"}
     //     dependees("d") = {"b", "d"}
+
+
+
+    ///Internally, each node
     /// </summary>
     public class DependencyGraph
     {
+
+        private Dictionary<string, List<string>> Dependents;
+        private Dictionary<string, List<string>> Dependees;
+        private int p_size;
         /// <summary>
         /// Creates an empty DependencyGraph.
         /// </summary>
         public DependencyGraph()
         {
+            Dependents = new();
+            Dependees = new();
+            p_size = 0;
         }
 
 
@@ -54,7 +60,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public int Size
         {
-            get { return 0; }
+            get { return p_size; }
         }
 
 
@@ -67,7 +73,8 @@ namespace SpreadsheetUtilities
         /// </summary>
         public int this[string s]
         {
-            get { return 0; }
+            get 
+            {  return Dependees[s].Count; }
         }
 
 
@@ -76,7 +83,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependents(string s)
         {
-            return false;
+            return Dependents[s].Count > 0;
         }
 
 
@@ -85,7 +92,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependees(string s)
         {
-            return false;
+            return Dependees[s].Count > 0;
         }
 
 
@@ -94,7 +101,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
-            return null;
+            return Dependents[s];
         }
 
         /// <summary>
@@ -102,7 +109,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependees(string s)
         {
-            return null;
+            return Dependees[s];
         }
 
 
@@ -118,6 +125,57 @@ namespace SpreadsheetUtilities
         /// <param name="t"> t cannot be evaluated until s is</param>        /// 
         public void AddDependency(string s, string t)
         {
+            //If the DG contains already contains S, make sure that the ordered pair (s,t) 
+            //doesn't already exist
+            if (Dependents.ContainsKey(s))
+            {
+                if (Dependents[s].Contains(t))
+                {
+                    return;
+                }
+                else
+                {
+                    //add the dependant to the set of dependants belonging to S
+                    Dependents[s].Add(t);
+
+                    //Add s as a dependee of t
+                    AddDependee(s, t);
+
+                    //increment size
+                    p_size++;
+                }
+            }
+            //if the DG doesn't contain S
+            else {
+                Dependents.Add(s,new List<string>());
+                Dependents[s].Add(t);
+
+                //Add s as a dependee of t
+                AddDependee(s, t);
+
+                p_size++;
+            }
+        }
+
+        /// <summary>
+        /// When a dependency is added, in addition to adding to the Dependents map, we also need to create
+        /// the back-edge. 
+        /// This helper method does that by adding the ordered pair (s,t), where t depends on s, to the map of dependees
+        /// </summary>
+        private void AddDependee(string s, string t)
+        {
+            //We don't need to reverify that the pair (s,t) doesn't already exist in 
+            //the dependency graph since AddDependency already verifies this
+            if (Dependees.ContainsKey(t))
+            {
+               //add s as a dependee of t
+                Dependees[t].Add(s);              
+            }
+            else
+            {
+                Dependees.Add(t, new List<string>());
+                Dependents[t].Add(s);
+            }
         }
 
 
@@ -128,6 +186,15 @@ namespace SpreadsheetUtilities
         /// <param name="t"></param>
         public void RemoveDependency(string s, string t)
         {
+            if (Dependents.ContainsKey(s))
+            {
+                if (Dependents[s].Contains(t))
+                {
+                    Dependents[s].Remove(t);
+                    Dependees[t].Remove(s);
+                    p_size--;
+                }                         
+            }
         }
 
 
@@ -137,6 +204,16 @@ namespace SpreadsheetUtilities
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
+            //Remove all existing ordered pairs with s
+            foreach(string r in Dependents[s])
+            {
+                RemoveDependency(s, r);
+            }
+            //add all the new dependencies
+            foreach(string t in newDependents)
+            { 
+                AddDependency(s, t);
+            }
         }
 
 
@@ -146,6 +223,16 @@ namespace SpreadsheetUtilities
         /// </summary>
         public void ReplaceDependees(string s, IEnumerable<string> newDependees)
         {
+            //Remove all existing ordered pairs (r,s)
+            foreach (string r in Dependees[s])
+            {
+                RemoveDependency(r, s);
+            }
+            //add all the new dependencies
+            foreach (string t in newDependees)
+            {
+                AddDependency(t, s);
+            }
         }
 
     }
