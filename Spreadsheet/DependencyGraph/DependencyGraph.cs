@@ -74,7 +74,12 @@ namespace SpreadsheetUtilities
         public int this[string s]
         {
             get 
-            {  return Dependees[s].Count; }
+            {  
+                if(Dependees.ContainsKey(s))
+                    return Dependees[s].Count; 
+                else
+                    return 0;
+            }
         }
 
 
@@ -83,7 +88,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependents(string s)
         {
-            return Dependents[s].Count > 0;
+            if (Dependents.ContainsKey(s))
+                return Dependents[s].Count > 0;
+            else
+                return false;
         }
 
 
@@ -92,7 +100,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependees(string s)
         {
-            return Dependees[s].Count > 0;
+            if (Dependees.ContainsKey(s))
+                return Dependees[s].Count > 0;
+            else
+                return false;
         }
 
 
@@ -101,7 +112,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
-            return Dependents[s];
+            if(Dependents.ContainsKey(s))
+                return Dependents[s];
+            else
+                return new List<string>();
         }
 
         /// <summary>
@@ -109,7 +123,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependees(string s)
         {
-            return Dependees[s];
+            if (Dependees.ContainsKey(s))
+                return Dependees[s];
+            else
+                return new List<string>();
         }
 
 
@@ -174,7 +191,7 @@ namespace SpreadsheetUtilities
             else
             {
                 Dependees.Add(t, new List<string>());
-                Dependents[t].Add(s);
+                Dependees[t].Add(s);
             }
         }
 
@@ -204,10 +221,20 @@ namespace SpreadsheetUtilities
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
-            //Remove all existing ordered pairs with s
-            foreach(string r in Dependents[s])
+            
+            //Remove all existing ordered pairs with s, if they exist
+            if (Dependents.ContainsKey(s))
             {
-                RemoveDependency(s, r);
+                List<string> dependentsToRemove = new();
+                foreach (string r in Dependents[s])
+                {
+                    dependentsToRemove.Add(r);
+                }
+
+                foreach (string r in dependentsToRemove)
+                { 
+                    RemoveDependency(s, r);
+                }
             }
             //add all the new dependencies
             foreach(string t in newDependents)
@@ -223,12 +250,25 @@ namespace SpreadsheetUtilities
         /// </summary>
         public void ReplaceDependees(string s, IEnumerable<string> newDependees)
         {
-            //Remove all existing ordered pairs (r,s)
-            foreach (string r in Dependees[s])
+            //Remove all existing ordered pairs (r,s), if they exist
+            if (Dependees.ContainsKey(s))
             {
-                RemoveDependency(r, s);
+                List<string> dependeesToRemove = new();
+                foreach (string r in Dependees[s])
+                {
+                    dependeesToRemove.Add(r);
+                }
+
+                foreach (string r in dependeesToRemove)
+                {
+                    RemoveDependency(r, s);
+                }
             }
             //add all the new dependencies
+          /*  if (newDependees.Count() == 0)
+            {
+                Dependees.Add(s, new List<string>());
+            }*/
             foreach (string t in newDependees)
             {
                 AddDependency(t, s);

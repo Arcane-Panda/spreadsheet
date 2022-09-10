@@ -105,6 +105,25 @@ namespace DevelopmentTests
             Assert.AreEqual(4, t.Size);
         }
 
+        /// <summary>
+        ///Non-empty graph should have dependents/dependees
+        ///</summary>
+        [TestMethod()]
+        public void DependentAndDependeeSizeTest()
+        {
+            DependencyGraph t = new DependencyGraph();
+            t.AddDependency("a", "b");
+            t.AddDependency("a", "c");
+            t.AddDependency("c", "b");
+            t.AddDependency("b", "d");
+            Assert.AreEqual(0, t["a"]);
+            Assert.AreEqual(2, t["b"]);
+            Assert.IsFalse(t.HasDependents("d"));
+            Assert.IsTrue(t.HasDependees("d"));
+            Assert.IsTrue(t.HasDependents("a"));
+            Assert.IsFalse(t.HasDependees("a"));
+        }
+
 
         /// <summary>
         ///Non-empty graph contains something
