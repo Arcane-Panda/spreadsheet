@@ -7,9 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FormulaEvaluator", "Formula
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvaluatorTester", "EvaluatorTester\EvaluatorTester.csproj", "{3BCC31AD-75BF-4F41-99B7-BAD63FEC141F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyGraph", "DependencyGraph\DependencyGraph.csproj", "{D2C46BFA-B448-49FB-87C3-38D10D67A21C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraph", "DependencyGraph\DependencyGraph.csproj", "{D2C46BFA-B448-49FB-87C3-38D10D67A21C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyGraphTests", "DependencyGraphTests\DependencyGraphTests.csproj", "{ABCF04F3-E987-4A14-9577-7251DECC4D87}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraphTests", "DependencyGraphTests\DependencyGraphTests.csproj", "{ABCF04F3-E987-4A14-9577-7251DECC4D87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Formula", "Formula\Formula.csproj", "{7352CA1C-39D4-4CAA-9BED-1EDAEA8BA463}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormulaTests", "FormulaTests\FormulaTests.csproj", "{ED3A4FA7-3499-4529-86BA-58FDD8C337CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +37,14 @@ Global
 		{ABCF04F3-E987-4A14-9577-7251DECC4D87}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABCF04F3-E987-4A14-9577-7251DECC4D87}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABCF04F3-E987-4A14-9577-7251DECC4D87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7352CA1C-39D4-4CAA-9BED-1EDAEA8BA463}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7352CA1C-39D4-4CAA-9BED-1EDAEA8BA463}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7352CA1C-39D4-4CAA-9BED-1EDAEA8BA463}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7352CA1C-39D4-4CAA-9BED-1EDAEA8BA463}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED3A4FA7-3499-4529-86BA-58FDD8C337CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED3A4FA7-3499-4529-86BA-58FDD8C337CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED3A4FA7-3499-4529-86BA-58FDD8C337CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED3A4FA7-3499-4529-86BA-58FDD8C337CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
