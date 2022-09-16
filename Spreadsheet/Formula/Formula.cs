@@ -105,7 +105,11 @@ namespace SpreadsheetUtilities
                 {
                     if (isValid(normalize(tokens[i])))
                     {
-                        variables.Append(tokens[i]);
+                        if (!variables.Contains(normalize(tokens[i])))
+                        {
+                            variables.Add(normalize(tokens[i]));
+                        }
+
                         if (i != tokens.Length - 1 && (tokens[i + 1] != ")" && !isOperator(tokens[i + 1])))
                         {
                             throw new FormulaFormatException("What follows a variable must be either an operator or a closing parenthesis.");
@@ -193,7 +197,7 @@ namespace SpreadsheetUtilities
             Stack<String> operatorStack = new Stack<String>();
 
             //split the expression to be evaluated into tokens        
-            IEnumerable<string> tokens = GetTokens(formula);
+            List<string> tokens = GetTokens(formula).ToList();
 
             //evaluate each token according the assignment algorithm, making sure to catch any argument exceptions that result from dividing by zero
             try
@@ -201,7 +205,7 @@ namespace SpreadsheetUtilities
                 foreach (string t in tokens)
                 {
 
-                    if (Regex.IsMatch(t, "\"[a-zA-Z_](?: [a-zA-Z_]|\\d)*\"")) //variable
+                    if (Regex.IsMatch(t, @"[a-zA-Z_](?: [a-zA-Z_]|\d)*")) //variable
                     {
                         try
                         {
@@ -256,9 +260,7 @@ namespace SpreadsheetUtilities
 
                         //check that there is an opening (
                         if (operatorStack.isOnTop("("))
-                            operatorStack.Pop();
-                        else
-                            throw new ArgumentException("Malformed expression, missing opening parenthesis");
+                            operatorStack.Pop();                   
 
                         if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
                         {
@@ -267,33 +269,17 @@ namespace SpreadsheetUtilities
                         }
 
                     }
-                    //if the token isn't just an empty string, we throw an expection because its something invalid
-                    else if (t != "")
-                    {
-                        throw new ArgumentException("Unknown token");
-                    }
                 }
 
                 //once we've evaluated the whole expression, either return the final value, or perform the final operation and return
                 if (operatorStack.Count == 0)
                 {
-                    if (valueStack.Count == 1)
-                        return valueStack.Pop();
-                    else
-                        throw new ArgumentException("Malformed expression");
+                    return valueStack.Pop();
                 }
                 else
                 {
-                    if (operatorStack.Count == 1 && valueStack.Count == 2)
-                    {
-                        double result = performOperation(valueStack, operatorStack);
-                        return result;
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Malformed expression");
-                    }
-
+                    double result = performOperation(valueStack, operatorStack);
+                    return result;
                 }
             }
             catch (ArgumentException)
@@ -314,8 +300,6 @@ namespace SpreadsheetUtilities
         /// <exception cref="ArgumentException"> Throws an exception when there aren't enough values to operate on (i.e the expression was malformed)</exception>
         private static double performOperation(Stack<double> valueStack, double val2, Stack<String> opStack)
         {
-            if (valueStack.Count < 1)
-                throw new ArgumentException("Tried to perform an operation in a malformed expression");
 
             double val1 = valueStack.Pop();
             string op = opStack.Pop();
@@ -332,10 +316,8 @@ namespace SpreadsheetUtilities
                     return val1 + val2;
                 case "-":
                     return val1 - val2;
-                default:
-                    throw new ArgumentException("Tried to perform an operation with an illegal operator");
-
             }
+            throw new ArgumentException("Malformed error slipped past the constructor");
         }
 
         /// <summary>
@@ -349,9 +331,6 @@ namespace SpreadsheetUtilities
         /// <exception cref="ArgumentException"> Throws an exception when there aren't enough values to operate on (i.e the expression was malformed)</exception>
         private static double performOperation(Stack<double> valueStack, Stack<String> opStack)
         {
-            if (valueStack.Count < 2)
-                throw new ArgumentException("Tried to perform an operation on a malformed expression");
-
             double val2 = valueStack.Pop();
             double val1 = valueStack.Pop();
             string op = opStack.Pop();
@@ -367,9 +346,8 @@ namespace SpreadsheetUtilities
                     return val1 + val2;
                 case "-":
                     return val1 - val2;
-                default:
-                    throw new ArgumentException("Tried to perform an operation with an illegal operator");
             }
+            throw new ArgumentException("Malformed error slipped past the constructor");
         }
 
         /// <summary>
@@ -456,7 +434,7 @@ namespace SpreadsheetUtilities
         public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is Formula))
-            { 
+            {
                 return false;
             }
 
@@ -537,9 +515,11 @@ namespace SpreadsheetUtilities
         public static bool isOnTop<T>(this Stack<T> stack, T target)
         {
             //silly extra local variable to get rid of a null dereference warning
+            if (stack.Count == 0)
+                return false;
             T onTop = stack.Peek();
             if (onTop != null)
-                return stack.Count > 0 && onTop.Equals(target);
+                return onTop.Equals(target);
             else
                 return false;
         }

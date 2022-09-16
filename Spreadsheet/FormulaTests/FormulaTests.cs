@@ -86,6 +86,7 @@ namespace FormulaTests
         {
             Formula f = new Formula("2 + a1");
         }
+
         [TestMethod]
         public void InvalidVariable()
         {
@@ -94,6 +95,31 @@ namespace FormulaTests
             Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1", s => "notValid", s => s.Equals("Valid") ));
 
             Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1", s => s, s => false ));
+        }
+
+        [TestMethod]
+        public void variableEnumeration()
+        {
+            Formula f1 = new Formula("x+y*z", s => s.ToUpper(), s => true);
+            string[] f1Vars = f1.GetVariables().ToArray();
+            Assert.AreEqual(3, f1Vars.Length);
+            Assert.AreEqual(f1Vars[0], "X");
+            Assert.AreEqual(f1Vars[1], "Y");
+            Assert.AreEqual(f1Vars[2], "Z");
+
+
+            Formula f2 = new Formula("x+X*z", s => s.ToUpper(), s => true);
+            string[] f2Vars = f2.GetVariables().ToArray();
+            Assert.AreEqual(2, f2Vars.Length);
+            Assert.AreEqual(f2Vars[0], "X");
+            Assert.AreEqual(f2Vars[1], "Z");
+
+            Formula f3 = new Formula("x+X*z");
+            string[] f3Vars = f3.GetVariables().ToArray();
+            Assert.AreEqual(3, f3Vars.Length);
+            Assert.AreEqual(f3Vars[0], "x");
+            Assert.AreEqual(f3Vars[1], "X");
+            Assert.AreEqual(f3Vars[2], "z");
         }
 
 
@@ -105,6 +131,7 @@ namespace FormulaTests
             Formula f1 = new Formula("2+3");
             Formula f2 = new Formula(" 2 + 3 ");
             Assert.AreEqual(f1,f2);
+            Assert.IsTrue(f1 == f2);
             Assert.AreEqual(f1.GetHashCode(), f2.GetHashCode());
         }
 
@@ -114,6 +141,7 @@ namespace FormulaTests
             Formula f1 = new Formula("2.0+3.0");
             Formula f2 = new Formula("2+3");
             Assert.AreEqual(f1, f2);
+            Assert.IsFalse(f1 != f2);
             Assert.AreEqual(f1.GetHashCode(), f2.GetHashCode());
         }
 
@@ -132,6 +160,45 @@ namespace FormulaTests
             Formula f1 = new Formula("2.0+3.0");
             Assert.AreNotEqual(f1, null);
             Assert.AreNotEqual(f1, 3);
+        }
+
+        //Evaluation
+        [TestMethod]
+        public void TestSingleNumber()
+        {
+            Assert.AreEqual(5.0, new Formula("5").Evaluate(s => 0));
+        }
+
+        [TestMethod]
+        public void TestSingleVariable()
+        {
+            Assert.AreEqual(13.0, new Formula("a1").Evaluate( s => 13));
+        }
+
+        [TestMethod]
+        public void TestBasicOperatorsAndParenthesis()
+        {
+            Assert.AreEqual(18.0, new Formula("(1+2) + (3*4) + (6/3) + (2-1)").Evaluate(s => 0));
+        }
+
+        [TestMethod]
+        public void TestArithmeticWithVariable()
+        {
+            Assert.AreEqual(6.0, new Formula("2+a1").Evaluate( s => 4));
+        }
+
+        [TestMethod]
+        public void UnknownVariable()
+        {
+            object result = new Formula("2+a1").Evaluate(s => { throw new ArgumentException(); });
+            Assert.IsTrue( result is FormulaError);
+        }
+
+        [TestMethod]
+        public void DivideByZero()
+        {
+            object result = new Formula("2/0").Evaluate(s => 0);
+            Assert.IsTrue(result is FormulaError);
         }
     }
 }
