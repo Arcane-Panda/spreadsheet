@@ -10,6 +10,13 @@ namespace FormulaTests
     {
         //Syntax errors
         [TestMethod]
+        public void EmptyFormula()
+        {
+            Formula f;
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula(""));
+        }
+
+        [TestMethod]
         public void InvalidTokens()
         {
             Formula f;

@@ -34,8 +34,9 @@ namespace SpreadsheetUtilities
     public class Formula
     {
         private string formula;
-        Func<string, string> normalize;
-        Func<string, bool> isValid;
+        private Func<string, string> normalize;
+        private Func<string, bool> isValid;
+        private List<string> variables = new();
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
         /// described in the class comment.  If the expression is syntactically invalid,
@@ -76,6 +77,90 @@ namespace SpreadsheetUtilities
             this.formula = formula;
             this.normalize = normalize;
             this.isValid = isValid;
+            int oParenthesisCount = 0;
+            int cParenthesisCount = 0;
+
+            string[] tokens = GetTokens(formula).ToArray();
+
+            //check non empty
+            if (tokens.Length == 0)
+            {
+                throw new FormulaFormatException("Formula cannot be empty");
+            }
+
+            //check starting token rule
+            if (isOperator(tokens[0]) || tokens[0] == ")")
+            {
+                throw new FormulaFormatException("Formula must start with a number, a variable, or an opening parenthesis.");
+            }
+
+            //check ending token rule
+            if (isOperator(tokens[tokens.Length - 1]) || tokens[tokens.Length - 1] == "(")
+            {
+                throw new FormulaFormatException("Formula must end with a number, a variable, or a closing parenthesis.");
+            }
+
+            //parse the whole formula checking for correctness
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                if (Regex.IsMatch(tokens[i], "\"[a-zA-Z_](?: [a-zA-Z_]|\\d)*\"")) //variable
+                {
+                    if (isValid(normalize(tokens[i])))
+                    {
+                        variables.Append(tokens[i]);
+                        if (i != tokens.Length - 1 && (tokens[i + 1] != ")" || !isOperator(tokens[i + 1])))
+                        {
+                            throw new FormulaFormatException("What follows a variable must be either an operator or a closing parenthesis.");
+                        }
+                    }
+                    else
+                        throw new FormulaFormatException(tokens[i] + " is an invalid vaariable name");
+                }
+                else if (tokens[i] == "(") //open parenthesis
+                {
+                    if (i != tokens.Length - 1 && (tokens[i + 1] == ")" || isOperator(tokens[i + 1])))
+                    {
+                        throw new FormulaFormatException("What follows an opening parenthesis must be either a number, a variable, or an opening parenthesis");
+                    }
+                    oParenthesisCount++;
+                }
+                else if (tokens[i] == ")") //closing parenthesis
+                {
+                    if (i != tokens.Length - 1 && (tokens[i + 1] != ")" || !isOperator(tokens[i + 1])))
+                    {
+                        throw new FormulaFormatException("What follows a closing parenthesis must be either an operator or a closing parenthesis.");
+                    }
+                    cParenthesisCount++;
+                    if (cParenthesisCount > oParenthesisCount)
+                    {
+                        throw new FormulaFormatException("More closing than opening parentheses");
+                    }
+                }
+                else if (isOperator(tokens[i])) //operator
+                {
+                    if (i != tokens.Length - 1 && (tokens[i + 1] == ")" || isOperator(tokens[i + 1])))
+                    {
+                        throw new FormulaFormatException("What follows an operator must be either a number, a variable, or an opening parenthesis");
+                    }
+                }
+                else if (Double.TryParse(tokens[i], out double d)) //double
+                {
+                    if (i != tokens.Length - 1 && (tokens[i + 1] != ")" || !isOperator(tokens[i + 1])))
+                    {
+                        throw new FormulaFormatException("What follows a number must be either an operator or a closing parenthesis.");
+                    }
+                }
+                else { //its some unknown token
+                    throw new FormulaFormatException(tokens[i] + "is not valid");
+                }
+            }
+
+            //check for balanced parenthesis
+            if (oParenthesisCount != cParenthesisCount)
+            {
+                throw new FormulaFormatException("Opening parenthesis do not match closing parenthesis");
+            }
+
         }
 
         /// <summary>
@@ -100,7 +185,7 @@ namespace SpreadsheetUtilities
         /// This method should never throw an exception.
         /// </summary>
         public object Evaluate(Func<string, double> lookup)
-        {    
+        {
             //Declare stacks to be used to evaluate expression
             Stack<double> valueStack = new Stack<double>();
             Stack<String> operatorStack = new Stack<String>();
@@ -284,6 +369,20 @@ namespace SpreadsheetUtilities
                     throw new ArgumentException("Tried to perform an operation with an illegal operator");
             }
         }
+
+        /// <summary>
+        /// Helper method that determines if a given string is one of 4 legal mathematical operators, those being
+        /// * / + or -
+        /// 
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns>If the string is one of those 4</returns>
+        private static Boolean isOperator(string s)
+        {
+            return s == "+" || s == "-" || s == "*"
+                || s == "/";
+        }
+
         /// <summary>
         /// Enumerates the normalized versions of all of the variables that occur in this 
         /// formula.  No normalization may appear more than once in the enumeration, even 
@@ -297,7 +396,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<String> GetVariables()
         {
-            return "";
+            return variables;
         }
 
         /// <summary>
@@ -415,7 +514,7 @@ namespace SpreadsheetUtilities
         {
             //silly extra local variable to get rid of a null dereference warning
             T onTop = stack.Peek();
-            if(onTop != null)
+            if (onTop != null)
                 return stack.Count > 0 && onTop.Equals(target);
             else
                 return false;
