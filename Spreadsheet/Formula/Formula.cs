@@ -33,6 +33,7 @@ namespace SpreadsheetUtilities
     /// </summary>
     public class Formula
     {
+        private string formula;
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
         /// described in the class comment.  If the expression is syntactically invalid,
@@ -95,9 +96,183 @@ namespace SpreadsheetUtilities
         /// </summary>
         public object Evaluate(Func<string, double> lookup)
         {
-            return "";
+            
+            //Declare stacks to be used to evaluate expression
+            Stack<double> valueStack = new Stack<double>();
+            Stack<String> operatorStack = new Stack<String>();
+
+            //split the expression to be evaluated into tokens
+            
+            List<string> tokens = GetTokens(formula) as List<string>;
+
+            //evaluate each token according the assignment algorithm
+            foreach (string t in tokens)
+            {
+
+                if (Regex.IsMatch(t, "\"[a-zA-Z_](?: [a-zA-Z_]|\\d)*\"")) //variable
+                {
+                    try
+                    {
+                        double varValue = lookup(t);
+                        if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
+                        {
+                            double result = performOperation(valueStack, varValue, operatorStack);
+                            valueStack.Push(result);
+                        }
+                        else
+                            valueStack.Push(varValue);
+                    }
+                    catch (ArgumentException)
+                    {
+                        return new FormulaError("Variable " + t + " not found");
+                    }         
+                }
+                else if (Double.TryParse(t, out double tokenResult)) //integer
+                {
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
+                    {
+                        double result = performOperation(valueStack, tokenResult, operatorStack);
+                        valueStack.Push(result);
+                    }
+                    else
+                        valueStack.Push(tokenResult);
+                }
+                else if (t == "+" || t == "-") //operator
+                {
+                    if ((operatorStack.isOnTop("+") || operatorStack.isOnTop("-")))
+                    {
+                        double result = performOperation(valueStack, operatorStack);
+                        valueStack.Push(result);
+                    }
+                    operatorStack.Push(t);
+                }
+                else if (t == "*" || t == "/")//operator
+                {
+                    operatorStack.Push(t);
+                }
+                else if (t == "(")//open parenthesis
+                {
+                    operatorStack.Push(t);
+                }
+                else if (t == ")") //close parenthesis
+                {
+                    if (operatorStack.isOnTop("+") || operatorStack.isOnTop("-"))
+                    {
+                        double result = performOperation(valueStack, operatorStack);
+                        valueStack.Push(result);
+                    }
+
+                    //check that there is an opening (
+                    if (operatorStack.isOnTop("("))
+                        operatorStack.Pop();
+                    else
+                        throw new ArgumentException("Malformed expression, missing opening parenthesis");
+
+                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
+                    {
+                        double result = performOperation(valueStack, operatorStack);
+                        valueStack.Push(result);
+                    }
+
+                }
+                //if the token isn't just an empty string, we throw an expection because its something invalid
+                else if (t != "")
+                {
+                    throw new ArgumentException("Unknown token");
+                }
+            }
+
+            //once we've evaluated the whole expression, either return the final value, or perform the final operation and return
+            if (operatorStack.Count == 0)
+            {
+                if (valueStack.Count == 1)
+                    return valueStack.Pop();
+                else
+                    throw new ArgumentException("Malformed expression");
+            }
+            else
+            {
+                if (operatorStack.Count == 1 && valueStack.Count == 2)
+                {
+                    double result = performOperation(valueStack, operatorStack);
+                    return result;
+                }
+                else
+                {
+                    throw new ArgumentException("Malformed expression");
+                }
+
+            }
+        }
+        /// <summary>
+        /// Helper method for Evaluate that uses 2 values and operator and returns the result of applying the operator to the 2 numbers
+        /// 
+        /// In this instance, one of the values comes from the current infix stack of values while the second value is the one currently being read
+        /// </summary>
+        /// <param name="valueStack"> the stack of values to pull from</param>
+        /// <param name="val2">the value currently being read</param>
+        /// <param name="opStack">the stack of operators</param>
+        /// <returns>The result of the operation</returns>
+        /// <exception cref="ArgumentException"> Throws an exception when there aren't enough values to operate on (i.e the expression was malformed)</exception>
+        private static double performOperation(Stack<double> valueStack, double val2, Stack<String> opStack)
+        {
+            if (valueStack.Count < 1)
+                throw new ArgumentException("Tried to perform an operation in a malformed expression");
+
+            double val1 = valueStack.Pop();
+            string op = opStack.Pop();
+
+            switch (op)
+            {
+                case "*":
+                    return val1 * val2;
+                case "/":
+                    if (val2 == 0)
+                        throw new ArgumentException("Division by 0");
+                    return val1 / val2;
+                case "+":
+                    return val1 + val2;
+                case "-":
+                    return val1 - val2;
+                default:
+                    throw new ArgumentException("Tried to perform an operation with an illegal operator");
+
+            }
         }
 
+        /// <summary>
+        /// Helper method for Evaluate that uses 2 values and operator and returns the result of applying the operator to the 2 numbers
+        /// 
+        /// In this instance, BOTH of the values come from the current infix stack of values 
+        /// </summary>
+        /// <param name="valueStack"> the stack of values to pull from</param>
+        /// <param name="opStack">the stack of operators</param>
+        /// <returns>The result of the operation</returns>
+        /// <exception cref="ArgumentException"> Throws an exception when there aren't enough values to operate on (i.e the expression was malformed)</exception>
+        private static double performOperation(Stack<double> valueStack, Stack<String> opStack)
+        {
+            if (valueStack.Count < 2)
+                throw new ArgumentException("Tried to perform an operation on a malformed expression");
+
+            double val2 = valueStack.Pop();
+            double val1 = valueStack.Pop();
+            string op = opStack.Pop();
+            switch (op)
+            {
+                case "*":
+                    return val1 * val2;
+                case "/":
+                    if (val2 == 0)
+                        throw new ArgumentException("Division by 0");
+                    return val1 / val2;
+                case "+":
+                    return val1 + val2;
+                case "-":
+                    return val1 - val2;
+                default:
+                    throw new ArgumentException("Tried to perform an operation with an illegal operator");
+            }
+        }
         /// <summary>
         /// Enumerates the normalized versions of all of the variables that occur in this 
         /// formula.  No normalization may appear more than once in the enumeration, even 
@@ -160,7 +335,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public static bool operator ==(Formula f1, Formula f2)
         {
-            return false;
+            return f1.Equals(f2);
         }
 
         /// <summary>
@@ -169,7 +344,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public static bool operator !=(Formula f1, Formula f2)
         {
-            return false;
+            return !f1.Equals(f2);
         }
 
         /// <summary>
@@ -213,7 +388,24 @@ namespace SpreadsheetUtilities
 
         }
     }
+    /// <summary>
+    /// Provides additional extensions for the stack class
+    /// </summary>
+    public static class StackExtensions
+    {
+        /// <summary>
+        /// Checks if a given target is at the top of a stack
+        /// </summary>
+        /// <typeparam name="T">Generic type</typeparam>
+        /// <param name="stack">stack to be checked</param>
+        /// <param name="target">search target</param>
+        /// <returns></returns>
+        public static bool isOnTop<T>(this Stack<T> stack, T target)
+        {
 
+            return stack.Count > 0 && stack.Peek().Equals(target);
+        }
+    }
     /// <summary>
     /// Used to report syntactic errors in the argument to the Formula constructor.
     /// </summary>
