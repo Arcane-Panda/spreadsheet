@@ -34,6 +34,8 @@ namespace SpreadsheetUtilities
     public class Formula
     {
         private string formula;
+        Func<string, string> normalize;
+        Func<string, bool> isValid;
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
         /// described in the class comment.  If the expression is syntactically invalid,
@@ -71,6 +73,9 @@ namespace SpreadsheetUtilities
         /// </summary>
         public Formula(String formula, Func<string, string> normalize, Func<string, bool> isValid)
         {
+            this.formula = formula;
+            this.normalize = normalize;
+            this.isValid = isValid;
         }
 
         /// <summary>
@@ -95,113 +100,119 @@ namespace SpreadsheetUtilities
         /// This method should never throw an exception.
         /// </summary>
         public object Evaluate(Func<string, double> lookup)
-        {
-            
+        {    
             //Declare stacks to be used to evaluate expression
             Stack<double> valueStack = new Stack<double>();
             Stack<String> operatorStack = new Stack<String>();
 
-            //split the expression to be evaluated into tokens
-            
-            List<string> tokens = GetTokens(formula) as List<string>;
+            //split the expression to be evaluated into tokens        
+            IEnumerable<string> tokens = GetTokens(formula);
 
-            //evaluate each token according the assignment algorithm
-            foreach (string t in tokens)
+            //evaluate each token according the assignment algorithm, making sure to catch any argument exceptions that result from dividing by zero
+            try
             {
-
-                if (Regex.IsMatch(t, "\"[a-zA-Z_](?: [a-zA-Z_]|\\d)*\"")) //variable
+                foreach (string t in tokens)
                 {
-                    try
+
+                    if (Regex.IsMatch(t, "\"[a-zA-Z_](?: [a-zA-Z_]|\\d)*\"")) //variable
                     {
-                        double varValue = lookup(t);
+                        try
+                        {
+                            double varValue = lookup(normalize(t));
+                            if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
+                            {
+                                double result = performOperation(valueStack, varValue, operatorStack);
+                                valueStack.Push(result);
+                            }
+                            else
+                                valueStack.Push(varValue);
+                        }
+                        catch (ArgumentException)
+                        {
+                            return new FormulaError("Variable " + t + " not found");
+                        }
+                    }
+                    else if (Double.TryParse(t, out double tokenResult)) //number
+                    {
                         if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
                         {
-                            double result = performOperation(valueStack, varValue, operatorStack);
+                            double result = performOperation(valueStack, tokenResult, operatorStack);
                             valueStack.Push(result);
                         }
                         else
-                            valueStack.Push(varValue);
+                            valueStack.Push(tokenResult);
                     }
-                    catch (ArgumentException)
+                    else if (t == "+" || t == "-") //operator
                     {
-                        return new FormulaError("Variable " + t + " not found");
-                    }         
+                        if ((operatorStack.isOnTop("+") || operatorStack.isOnTop("-")))
+                        {
+                            double result = performOperation(valueStack, operatorStack);
+                            valueStack.Push(result);
+                        }
+                        operatorStack.Push(t);
+                    }
+                    else if (t == "*" || t == "/")//operator
+                    {
+                        operatorStack.Push(t);
+                    }
+                    else if (t == "(")//open parenthesis
+                    {
+                        operatorStack.Push(t);
+                    }
+                    else if (t == ")") //close parenthesis
+                    {
+                        if (operatorStack.isOnTop("+") || operatorStack.isOnTop("-"))
+                        {
+                            double result = performOperation(valueStack, operatorStack);
+                            valueStack.Push(result);
+                        }
+
+                        //check that there is an opening (
+                        if (operatorStack.isOnTop("("))
+                            operatorStack.Pop();
+                        else
+                            throw new ArgumentException("Malformed expression, missing opening parenthesis");
+
+                        if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
+                        {
+                            double result = performOperation(valueStack, operatorStack);
+                            valueStack.Push(result);
+                        }
+
+                    }
+                    //if the token isn't just an empty string, we throw an expection because its something invalid
+                    else if (t != "")
+                    {
+                        throw new ArgumentException("Unknown token");
+                    }
                 }
-                else if (Double.TryParse(t, out double tokenResult)) //integer
+
+                //once we've evaluated the whole expression, either return the final value, or perform the final operation and return
+                if (operatorStack.Count == 0)
                 {
-                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
-                    {
-                        double result = performOperation(valueStack, tokenResult, operatorStack);
-                        valueStack.Push(result);
-                    }
+                    if (valueStack.Count == 1)
+                        return valueStack.Pop();
                     else
-                        valueStack.Push(tokenResult);
-                }
-                else if (t == "+" || t == "-") //operator
-                {
-                    if ((operatorStack.isOnTop("+") || operatorStack.isOnTop("-")))
-                    {
-                        double result = performOperation(valueStack, operatorStack);
-                        valueStack.Push(result);
-                    }
-                    operatorStack.Push(t);
-                }
-                else if (t == "*" || t == "/")//operator
-                {
-                    operatorStack.Push(t);
-                }
-                else if (t == "(")//open parenthesis
-                {
-                    operatorStack.Push(t);
-                }
-                else if (t == ")") //close parenthesis
-                {
-                    if (operatorStack.isOnTop("+") || operatorStack.isOnTop("-"))
-                    {
-                        double result = performOperation(valueStack, operatorStack);
-                        valueStack.Push(result);
-                    }
-
-                    //check that there is an opening (
-                    if (operatorStack.isOnTop("("))
-                        operatorStack.Pop();
-                    else
-                        throw new ArgumentException("Malformed expression, missing opening parenthesis");
-
-                    if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
-                    {
-                        double result = performOperation(valueStack, operatorStack);
-                        valueStack.Push(result);
-                    }
-
-                }
-                //if the token isn't just an empty string, we throw an expection because its something invalid
-                else if (t != "")
-                {
-                    throw new ArgumentException("Unknown token");
-                }
-            }
-
-            //once we've evaluated the whole expression, either return the final value, or perform the final operation and return
-            if (operatorStack.Count == 0)
-            {
-                if (valueStack.Count == 1)
-                    return valueStack.Pop();
-                else
-                    throw new ArgumentException("Malformed expression");
-            }
-            else
-            {
-                if (operatorStack.Count == 1 && valueStack.Count == 2)
-                {
-                    double result = performOperation(valueStack, operatorStack);
-                    return result;
+                        throw new ArgumentException("Malformed expression");
                 }
                 else
                 {
-                    throw new ArgumentException("Malformed expression");
-                }
+                    if (operatorStack.Count == 1 && valueStack.Count == 2)
+                    {
+                        double result = performOperation(valueStack, operatorStack);
+                        return result;
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Malformed expression");
+                    }
 
+                }
+            }
+            catch (ArgumentException)
+            {
+
+                return new FormulaError("Can't divide by 0");
             }
         }
         /// <summary>
@@ -402,8 +413,12 @@ namespace SpreadsheetUtilities
         /// <returns></returns>
         public static bool isOnTop<T>(this Stack<T> stack, T target)
         {
-
-            return stack.Count > 0 && stack.Peek().Equals(target);
+            //silly extra local variable to get rid of a null dereference warning
+            T onTop = stack.Peek();
+            if(onTop != null)
+                return stack.Count > 0 && onTop.Equals(target);
+            else
+                return false;
         }
     }
     /// <summary>
