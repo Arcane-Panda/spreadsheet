@@ -20,55 +20,55 @@ namespace FormulaTests
         public void InvalidTokens()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>( () =>  f = new Formula("5 + 5 - $4")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("5 + 5 - $4"));
         }
 
         [TestMethod]
         public void MustContainOneToken()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula(""));
         }
 
         [TestMethod]
         public void ClosingParenthesisShouldNotExceedOpening()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("(5+3) + 6+7)")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("(5+3) + 6+7)"));
         }
 
         [TestMethod]
         public void BalancedParenthesisCount()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("((5+3) + (6+7)")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("((5+3) + (6+7)"));
         }
 
         [TestMethod]
         public void IllegalStartingToken()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("*(5+3) + (6+7)")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("*(5+3) + (6+7)"));
         }
         [TestMethod]
         public void IllegalEndingToken()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("(5+3) + (6+7)*")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("(5+3) + (6+7)*"));
         }
 
         [TestMethod]
         public void ParenthesisFollowingRule()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (+5)")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (+5)"));
         }
 
         [TestMethod]
         public void OperatorFollowingRule()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + *(5-3)")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + *(5-3)"));
         }
 
         [TestMethod]
@@ -76,6 +76,7 @@ namespace FormulaTests
         {
             Formula f;
             Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (5-3)5"));
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (5(-3)"));
             Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1 3"));
             Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (5-3) + 5 ("));
         }
@@ -92,9 +93,9 @@ namespace FormulaTests
         {
             Formula f;
             //normalize(v) does not return a legal variable
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1", s => "notValid", s => s.Equals("Valid") ));
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1", s => "notValid", s => s.Equals("Valid")));
 
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1", s => s, s => false ));
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1", s => s, s => false));
         }
 
         [TestMethod]
@@ -130,7 +131,7 @@ namespace FormulaTests
         {
             Formula f1 = new Formula("2+3");
             Formula f2 = new Formula(" 2 + 3 ");
-            Assert.AreEqual(f1,f2);
+            Assert.AreEqual(f1, f2);
             Assert.IsTrue(f1 == f2);
             Assert.AreEqual(f1.GetHashCode(), f2.GetHashCode());
         }
@@ -172,7 +173,7 @@ namespace FormulaTests
         [TestMethod]
         public void TestSingleVariable()
         {
-            Assert.AreEqual(13.0, new Formula("a1").Evaluate( s => 13));
+            Assert.AreEqual(13.0, new Formula("a1").Evaluate(s => 13));
         }
 
         [TestMethod]
@@ -182,16 +183,39 @@ namespace FormulaTests
         }
 
         [TestMethod]
+        public void TestDoubleAdditions()
+        {
+            Assert.AreEqual(8.8, new Formula("2.2 + 2.2 + 2.2 + 2.2").Evaluate(s => 0));
+        }
+
+        [TestMethod]
+        public void TestOrderOperations()
+        {
+            Assert.AreEqual(20.0, new Formula("2+6*3").Evaluate(s => 0));
+            Assert.AreEqual(15.0, new Formula("2*6+3").Evaluate(s => 0));
+
+            Assert.AreEqual(16.0, new Formula("2*(3+5)").Evaluate(s => 0));
+            Assert.AreEqual(10.0, new Formula("2+(3+5)").Evaluate(s => 0));
+            Assert.AreEqual(24.0, new Formula("(2+6)*3").Evaluate(s => 0));
+        }
+
+        [TestMethod]
         public void TestArithmeticWithVariable()
         {
-            Assert.AreEqual(6.0, new Formula("2+a1").Evaluate( s => 4));
+            Assert.AreEqual(6.0, new Formula("2+a1").Evaluate(s => 4));
+        }
+
+        [TestMethod]
+        public void TestComplexAndParentheses()
+        {
+            Assert.AreEqual(194.0, new Formula("2+3*5+(3+4*8)*5+2").Evaluate(s => 0));
         }
 
         [TestMethod]
         public void UnknownVariable()
         {
             object result = new Formula("2+a1").Evaluate(s => { throw new ArgumentException(); });
-            Assert.IsTrue( result is FormulaError);
+            Assert.IsTrue(result is FormulaError);
         }
 
         [TestMethod]
@@ -199,6 +223,39 @@ namespace FormulaTests
         {
             object result = new Formula("2/0").Evaluate(s => 0);
             Assert.IsTrue(result is FormulaError);
+
+             result = new Formula("((2+4)*4+2)/0").Evaluate(s => 0);
+            Assert.IsTrue(result is FormulaError);
+        }
+
+        [TestMethod]
+        public void TestComplexTimesParentheses()
+        {
+            Assert.AreEqual(26.0, new Formula("2+3*(3+5)").Evaluate( s => 0));
+        }
+
+        [TestMethod]
+        public void TestPlusComplex()
+        {
+            Assert.AreEqual(50.0, new Formula("2 + (3 + 5 * 9)").Evaluate( s => 0));
+        }
+
+        [TestMethod]
+        public void TestComplexMultiVar()
+        {
+            Assert.AreEqual(5.142857142857142, new Formula("y1*3-8/2+4*(8-9*2)/14*x7").Evaluate( s => (s == "x7") ? 1 : 4));
+        }
+
+        [TestMethod]
+        public void TestRepeatedVar()
+        {
+            Assert.AreEqual(0.0, new Formula("a4-a4*a4/a4").Evaluate( s => 3));
+        }
+
+        [TestMethod]
+        public void TestComplexNestedParensLeft()
+        {
+            Assert.AreEqual(12.0, new Formula("((((x1+x2)+x3)+x4)+x5)+x6").Evaluate( s => 2));
         }
     }
 }

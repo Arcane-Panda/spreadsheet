@@ -317,6 +317,8 @@ namespace SpreadsheetUtilities
                 case "-":
                     return val1 - val2;
             }
+
+            //THIS LINE WILL NEVER RUN BUT THE COMPILER GETS MAD WITHOUT IT
             throw new ArgumentException("Malformed error slipped past the constructor");
         }
 
@@ -347,6 +349,8 @@ namespace SpreadsheetUtilities
                 case "-":
                     return val1 - val2;
             }
+
+            //THIS LINE WILL NEVER RUN BUT THE COMPILER GETS MAD WITHOUT IT
             throw new ArgumentException("Malformed error slipped past the constructor");
         }
 
@@ -521,6 +525,7 @@ namespace SpreadsheetUtilities
             if (onTop != null)
                 return onTop.Equals(target);
             else
+                //THIS LINE WILL NEVER RUN BUT THE COMPILER GETS MAD WITHOUT IT
                 return false;
         }
     }
