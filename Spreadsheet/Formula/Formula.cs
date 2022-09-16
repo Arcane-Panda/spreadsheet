@@ -34,8 +34,8 @@ namespace SpreadsheetUtilities
     public class Formula
     {
         private string formula;
+        private string formulaAsString;
         private Func<string, string> normalize;
-        private Func<string, bool> isValid;
         private List<string> variables = new();
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
@@ -75,7 +75,6 @@ namespace SpreadsheetUtilities
         {
             this.formula = formula;
             this.normalize = normalize;
-            this.isValid = isValid;
             int oParenthesisCount = 0;
             int cParenthesisCount = 0;
 
@@ -162,6 +161,8 @@ namespace SpreadsheetUtilities
                 throw new FormulaFormatException("Opening parenthesis do not match closing parenthesis");
             }
 
+            //now that everything is confirmed syntactically correct, save the string version
+            formulaAsString = this.ToString();
         }
 
         /// <summary>
@@ -412,7 +413,24 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override string ToString()
         {
-            return "";
+            StringBuilder result = new();
+            List<string> formulaTokens = GetTokens(formula).ToList();
+            foreach (string s in formulaTokens)
+            {
+                if (Regex.IsMatch(s, @"[a-zA-Z_](?: [a-zA-Z_]|\d)*"))
+                {
+                    result.Append(normalize(s));
+                }
+                else if (Double.TryParse(s, out double val))
+                {
+                    result.Append(val);
+                }
+                else
+                {
+                    result.Append(s);
+                }
+            }
+            return result.ToString();
         }
 
         /// <summary>
@@ -437,7 +455,12 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override bool Equals(object? obj)
         {
-            return false;
+            if (obj == null || !(obj is Formula))
+            { 
+                return false;
+            }
+
+            return formulaAsString.Equals(obj.ToString());
         }
 
         /// <summary>
@@ -465,7 +488,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override int GetHashCode()
         {
-            return 0;
+            return formulaAsString.GetHashCode();
         }
 
         /// <summary>
