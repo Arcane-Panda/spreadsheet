@@ -47,8 +47,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public Formula(String formula) :
             this(formula, s => s, s => true)
-        {
-        }
+        { }
 
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
@@ -103,12 +102,12 @@ namespace SpreadsheetUtilities
             //parse the whole formula checking for correctness
             for (int i = 0; i < tokens.Length; i++)
             {
-                if (Regex.IsMatch(tokens[i], "\"[a-zA-Z_](?: [a-zA-Z_]|\\d)*\"")) //variable
+                if (Regex.IsMatch(tokens[i], @"[a-zA-Z_](?: [a-zA-Z_]|\d)*")) //variable
                 {
                     if (isValid(normalize(tokens[i])))
                     {
                         variables.Append(tokens[i]);
-                        if (i != tokens.Length - 1 && (tokens[i + 1] != ")" || !isOperator(tokens[i + 1])))
+                        if (i != tokens.Length - 1 && (tokens[i + 1] != ")" && !isOperator(tokens[i + 1])))
                         {
                             throw new FormulaFormatException("What follows a variable must be either an operator or a closing parenthesis.");
                         }
@@ -126,7 +125,7 @@ namespace SpreadsheetUtilities
                 }
                 else if (tokens[i] == ")") //closing parenthesis
                 {
-                    if (i != tokens.Length - 1 && (tokens[i + 1] != ")" || !isOperator(tokens[i + 1])))
+                    if (i != tokens.Length - 1 && (tokens[i + 1] != ")" && !isOperator(tokens[i + 1])))
                     {
                         throw new FormulaFormatException("What follows a closing parenthesis must be either an operator or a closing parenthesis.");
                     }
@@ -145,13 +144,15 @@ namespace SpreadsheetUtilities
                 }
                 else if (Double.TryParse(tokens[i], out double d)) //double
                 {
-                    if (i != tokens.Length - 1 && (tokens[i + 1] != ")" || !isOperator(tokens[i + 1])))
+
+                    if (i != tokens.Length - 1 && (tokens[i + 1] != ")" && !isOperator(tokens[i + 1])))
                     {
                         throw new FormulaFormatException("What follows a number must be either an operator or a closing parenthesis.");
                     }
                 }
-                else { //its some unknown token
-                    throw new FormulaFormatException(tokens[i] + "is not valid");
+                else
+                { //its some unknown token
+                    throw new FormulaFormatException(tokens[i] + " is not valid");
                 }
             }
 

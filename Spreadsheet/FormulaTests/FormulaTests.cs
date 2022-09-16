@@ -75,11 +75,17 @@ namespace FormulaTests
         public void ExtraFollowingRule()
         {
             Formula f;
-            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (5-3)5")); 
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (5-3)5"));
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("2 + a1 3"));
+            Assert.ThrowsException<FormulaFormatException>(() => f = new Formula("6 + (5-3) + 5 ("));
         }
 
-        //Invalid Variables
-        //Equality
+        //Variables
+        [TestMethod]
+        public void ValidVariable()
+        {
+            Formula f = new Formula("2 + a1");
+        }
         [TestMethod]
         public void InvalidVariable()
         {
