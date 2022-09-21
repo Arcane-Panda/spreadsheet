@@ -204,8 +204,18 @@ namespace SpreadsheetUtilities
             {
                 foreach (string t in tokens)
                 {
-
-                    if (Regex.IsMatch(t, @"[a-zA-Z_](?: [a-zA-Z_]|\d)*")) //variable
+                    if (Double.TryParse(t, out double tokenResult)) //number
+                    {
+                        if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
+                        {
+                            double result = performOperation(valueStack, tokenResult, operatorStack);
+                            valueStack.Push(result);
+                        }
+                        else
+                            valueStack.Push(tokenResult);
+                        
+                    }
+                    else if (Regex.IsMatch(t, @"[a-zA-Z_](?: [a-zA-Z_]|\d)*")) //variable
                     {
                         try
                         {
@@ -222,16 +232,6 @@ namespace SpreadsheetUtilities
                         {
                             return new FormulaError("Variable " + t + " not found");
                         }
-                    }
-                    else if (Double.TryParse(t, out double tokenResult)) //number
-                    {
-                        if (operatorStack.isOnTop("*") || operatorStack.isOnTop("/"))
-                        {
-                            double result = performOperation(valueStack, tokenResult, operatorStack);
-                            valueStack.Push(result);
-                        }
-                        else
-                            valueStack.Push(tokenResult);
                     }
                     else if (t == "+" || t == "-") //operator
                     {
@@ -399,13 +399,14 @@ namespace SpreadsheetUtilities
             List<string> formulaTokens = GetTokens(formula).ToList();
             foreach (string s in formulaTokens)
             {
-                if (Regex.IsMatch(s, @"[a-zA-Z_](?: [a-zA-Z_]|\d)*"))
-                {
-                    result.Append(normalize(s));
-                }
-                else if (Double.TryParse(s, out double val))
+                if (Double.TryParse(s, out double val))
                 {
                     result.Append(val);
+                    
+                }
+                else if (Regex.IsMatch(s, @"[a-zA-Z_](?: [a-zA-Z_]|\d)*"))
+                {
+                    result.Append(normalize(s));
                 }
                 else
                 {
