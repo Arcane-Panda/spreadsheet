@@ -186,18 +186,26 @@ namespace SS
     /// </summary>
     private void Visit( string start, string name, ISet<string> visited, LinkedList<string> changed )
     {
+      //Marks the current cell as visited
       visited.Add( name );
+      
+      //goes through all direct dependents of the given cell
       foreach ( string n in GetDirectDependents( name ) )
       {
+        //if this dependent is the same cell as the one we started on, weve done a circle. Throw a CircularException
         if ( n.Equals( start ) )
         {
           throw new CircularException();
         }
+        //if we havent visited this cell yet, then visit it recursively
         else if ( !visited.Contains( n ) )
         {
           Visit( start, n, visited, changed );
         }
       }
+
+      //once we've made it to a cell with no unvisited dependents, we know this is the end and we should visit it last
+      //so we will propogate back up in reverse order, but putting our list in the proper order by using AddFirst
       changed.AddFirst( name );
     }
 
