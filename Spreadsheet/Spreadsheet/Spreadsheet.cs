@@ -82,7 +82,7 @@ namespace SS
             }
 
             //if the cell is non-empty, return its contents, otherwise return an empty string
-            if (nonEmpty.TryGetValue(name, out Cell result))
+            if (nonEmpty.TryGetValue(name, out Cell? result))
             { 
                 return result.Contents;
             } else
