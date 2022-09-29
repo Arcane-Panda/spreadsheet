@@ -129,6 +129,9 @@ namespace SS
             //if the cell is not empty, modify its contents and return the cells needed to recalculate
             if (nonEmpty.ContainsKey(name))
             {
+                //remove dependencies 
+                dependencyGraph.ReplaceDependees(name, new List<string>());
+
                 nonEmpty[name].Contents = number;
                 return this.GetCellsToRecalculate(name).ToList();
             }
@@ -163,9 +166,16 @@ namespace SS
                 throw new InvalidNameException();
             }
 
+            //if trying to explicitily make a cell empty, dont do anything
+            if (text.Equals(""))
+                return new List<string>();
+
             //if the cell is not empty, modify its contents and return the cells needed to recalculate
             if (nonEmpty.ContainsKey(name))
             {
+                //remove dependencies 
+                dependencyGraph.ReplaceDependees(name, new List<string>());
+
                 nonEmpty[name].Contents = text;
                 return this.GetCellsToRecalculate(name).ToList();
             }
