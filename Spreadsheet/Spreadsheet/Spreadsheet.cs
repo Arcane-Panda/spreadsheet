@@ -65,6 +65,17 @@ namespace SS
             dependencyGraph = new();
         }
 
+        /// <summary>
+        /// Constructor that allows user to provide a validity delegate, normalizer, delegate, and a version
+        /// </summary>
+        /// <param name="validator">delegate that takes in a string and returns a bool</param>
+        /// <param name="normalizer">delegate that takes and returns a string</param>
+        /// <param name="version"></param>
+        public Spreadsheet(Func<string, bool> validator, Func<string, string> normalizer, string version) : base(validator, normalizer, version)
+        {
+            nonEmpty = new();
+            dependencyGraph = new();
+        }
 
         /// <summary>
         /// True if this spreadsheet has been modified since it was created or saved                  
