@@ -1,5 +1,6 @@
 ﻿using SpreadsheetUtilities;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace SS
 {
@@ -58,11 +59,18 @@ namespace SS
         /// <summary>
         /// Zero argument constructor
         /// </summary>
-        public Spreadsheet()
+        public Spreadsheet() : base(x => true, x => x, "default")
         {
             nonEmpty = new();
             dependencyGraph = new();
         }
+
+
+        /// <summary>
+        /// True if this spreadsheet has been modified since it was created or saved                  
+        /// (whichever happened most recently); false otherwise.
+        /// </summary>
+        public override bool Changed { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
 
         /// <summary>
         /// If name is invalid, throws an InvalidNameException.
@@ -92,6 +100,17 @@ namespace SS
         }
 
         /// <summary>
+        /// If name is invalid, throws an InvalidNameException.
+        /// 
+        /// Otherwise, returns the value (as opposed to the contents) of the named cell.  The return
+        /// value should be either a string, a double, or a SpreadsheetUtilities.FormulaError.
+        /// </summary>
+        public override object GetCellValue(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Enumerates the names of all the non-empty cells in the spreadsheet.
         /// </summary>
         /// <returns>Names of all non-empty cells in an IEUnumerable</returns>
@@ -102,6 +121,45 @@ namespace SS
             {
                 yield return cell.Key;
             }
+        }
+
+
+        /// <summary>
+        /// Writes the contents of this spreadsheet to the named file using a JSON format.
+        /// The JSON object should have the following fields:
+        /// "Version" - the version of the spreadsheet software (a string)
+        /// "cells" - an object containing 0 or more cell objects
+        ///           Each cell object has a field named after the cell itself 
+        ///           The value of that field is another object representing the cell's contents
+        ///               The contents object has a single field called "stringForm",
+        ///               representing the string form of the cell's contents
+        ///               - If the contents is a string, the value of stringForm is that string
+        ///               - If the contents is a double d, the value of stringForm is d.ToString()
+        ///               - If the contents is a Formula f, the value of stringForm is "=" + f.ToString()
+        /// 
+        /// For example, if this spreadsheet has a version of "default" 
+        /// and contains a cell "A1" with contents being the double 5.0 
+        /// and a cell "B3" with contents being the Formula("A1+2"), 
+        /// a JSON string produced by this method would be:
+        /// 
+        /// {
+        ///   "cells": {
+        ///     "A1": {
+        ///       "stringForm": "5"
+        ///     },
+        ///     "B3": {
+        ///       "stringForm": "=A1+2"
+        ///     }
+        ///   },
+        ///   "Version": "default"
+        /// }
+        /// 
+        /// If there are any problems opening, writing, or closing the file, the method should throw a
+        /// SpreadsheetReadWriteException with an explanatory message.
+        /// </summary>
+        public override void Save(string filename)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -118,7 +176,7 @@ namespace SS
         /// <param name="number">double to set as cell's contents</param>
         /// <returns>List with name + names of all indirect or direct dependents</returns>
         /// <exception cref="InvalidNameException"></exception>
-        public override IList<string> SetCellContents(string name, double number)
+        protected override IList<string> SetCellContents(string name, double number)
         {
             //check for valid name
             if (!IsValidName(name))
@@ -158,7 +216,7 @@ namespace SS
         /// <param name="text">string to set as cell's contents</param>
         /// <returns>List with name + names of all indirect or direct dependents</returns>
         /// <exception cref="InvalidNameException">Cell name was invalid</exception>
-        public override IList<string> SetCellContents(string name, string text)
+        protected override IList<string> SetCellContents(string name, string text)
         {
             //check for valid name
             if (!IsValidName(name))
@@ -205,7 +263,7 @@ namespace SS
         /// <param name="formula">The formula object to set as its content</param>
         /// <returns>List with name + names of all indirect or direct dependents</returns>
         /// <exception cref="CircularException">Change would have caused a circular dependency</exception>
-        public override IList<string> SetCellContents(string name, Formula formula)
+        protected override IList<string> SetCellContents(string name, Formula formula)
         {
             //check for valid name
             if (!IsValidName(name))
@@ -264,6 +322,41 @@ namespace SS
                 }
                 
             }
+        }
+
+        /// <summary>
+        /// If name is invalid, throws an InvalidNameException.
+        /// 
+        /// Otherwise, if content parses as a double, the contents of the named
+        /// cell becomes that double.
+        /// 
+        /// Otherwise, if content begins with the character '=', an attempt is made
+        /// to parse the remainder of content into a Formula f using the Formula
+        /// constructor.  There are then three possibilities:
+        /// 
+        ///   (1) If the remainder of content cannot be parsed into a Formula, a 
+        ///       SpreadsheetUtilities.FormulaFormatException is thrown.
+        ///       
+        ///   (2) Otherwise, if changing the contents of the named cell to be f
+        ///       would cause a circular dependency, a CircularException is thrown,
+        ///       and no change is made to the spreadsheet.
+        ///       
+        ///   (3) Otherwise, the contents of the named cell becomes f.
+        /// 
+        /// Otherwise, the contents of the named cell becomes content.
+        /// 
+        /// If an exception is not thrown, the method returns a list consisting of
+        /// name plus the names of all other cells whose value depends, directly
+        /// or indirectly, on the named cell. The order of the list should be any
+        /// order such that if cells are re-evaluated in that order, their dependencies 
+        /// are satisfied by the time they are evaluated.
+        /// 
+        /// For example, if name is A1, B1 contains A1*2, and C1 contains B1+A1, the
+        /// list {A1, B1, C1} is returned.
+        /// </summary>
+        public override IList<string> SetContentsOfCell(string name, string content)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
