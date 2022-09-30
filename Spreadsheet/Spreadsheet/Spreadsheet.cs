@@ -57,12 +57,23 @@ namespace SS
         private DependencyGraph dependencyGraph;
 
         /// <summary>
+        /// True if this spreadsheet has been modified since it was created or saved                  
+        /// (whichever happened most recently); false otherwise.
+        /// </summary>
+        public override bool Changed
+        {
+            get;
+            protected set;
+        }
+
+        /// <summary>
         /// Zero argument constructor
         /// </summary>
         public Spreadsheet() : base(x => true, x => x, "default")
         {
             nonEmpty = new();
             dependencyGraph = new();
+            Changed = false;
         }
 
         /// <summary>
@@ -75,6 +86,7 @@ namespace SS
         {
             nonEmpty = new();
             dependencyGraph = new();
+            Changed = false;
         }
 
         /// <summary>
@@ -88,13 +100,10 @@ namespace SS
         {
             nonEmpty = new();
             dependencyGraph = new();
+            Changed = false;
         }
 
-        /// <summary>
-        /// True if this spreadsheet has been modified since it was created or saved                  
-        /// (whichever happened most recently); false otherwise.
-        /// </summary>
-        public override bool Changed { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
+       
 
         /// <summary>
         /// If name is invalid, throws an InvalidNameException.
@@ -107,6 +116,8 @@ namespace SS
         /// <exception cref="InvalidNameException">The given name is invalid</exception>
         public override object GetCellContents(string name)
         {
+            name = Normalize(name);
+
             //check for valid name
             if (!IsValidName(name))
             {
@@ -362,6 +373,7 @@ namespace SS
         /// </summary>
         public override IList<string> SetContentsOfCell(string name, string content)
         {
+            name = Normalize(name);
             //check for valid name
             if (!IsValidName(name))
                 throw new InvalidNameException();
@@ -369,6 +381,7 @@ namespace SS
             //check if content is a double
             if (Double.TryParse(content, out double result))
             {
+                Changed = true;
                 return SetCellContents(name, result);
             }
             else
@@ -378,11 +391,12 @@ namespace SS
                 String formula = content.Substring(1);
                 try
                 {
-                    return SetCellContents(name, new Formula(formula));
+                    Changed = true;
+                    return SetCellContents(name, new Formula(formula, Normalize, IsValid));
                 }
                 //Catches a FormulaFormatException or a CircularException
                 catch (Exception)
-                {
+                {                   
                     throw;
                 }
 
@@ -390,9 +404,9 @@ namespace SS
             else
             //set it to a string
             {
+                Changed = true;
                 return SetCellContents(name, content);
             }
-            throw new NotImplementedException();
         }
 
         /// <summary>
