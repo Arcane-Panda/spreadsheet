@@ -78,6 +78,19 @@ namespace SS
         }
 
         /// <summary>
+        /// Constructor that allows user to load a spreadsheet file from a specified path
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="validator"></param>
+        /// <param name="normalizer"></param>
+        /// <param name="version"></param>
+        public Spreadsheet(string path, Func<string, bool> validator, Func<string, string> normalizer, string version) : base(validator, normalizer, version)
+        {
+            nonEmpty = new();
+            dependencyGraph = new();
+        }
+
+        /// <summary>
         /// True if this spreadsheet has been modified since it was created or saved                  
         /// (whichever happened most recently); false otherwise.
         /// </summary>
@@ -186,15 +199,8 @@ namespace SS
         /// <param name="name">Name of cell</param>
         /// <param name="number">double to set as cell's contents</param>
         /// <returns>List with name + names of all indirect or direct dependents</returns>
-        /// <exception cref="InvalidNameException"></exception>
         protected override IList<string> SetCellContents(string name, double number)
         {
-            //check for valid name
-            if (!IsValidName(name))
-            {
-                throw new InvalidNameException();
-            }
-
             //if the cell is not empty, modify its contents and return the cells needed to recalculate
             if (nonEmpty.ContainsKey(name))
             {
@@ -229,11 +235,6 @@ namespace SS
         /// <exception cref="InvalidNameException">Cell name was invalid</exception>
         protected override IList<string> SetCellContents(string name, string text)
         {
-            //check for valid name
-            if (!IsValidName(name))
-            {
-                throw new InvalidNameException();
-            }
 
             //if trying to explicitily make a cell empty, dont do anything
             if (text.Equals(""))
@@ -276,12 +277,6 @@ namespace SS
         /// <exception cref="CircularException">Change would have caused a circular dependency</exception>
         protected override IList<string> SetCellContents(string name, Formula formula)
         {
-            //check for valid name
-            if (!IsValidName(name))
-            {
-                throw new InvalidNameException();
-            }
-
             //get the new dependees from the formula
             List<string> NewDependeeVars = formula.GetVariables().ToList();
 
@@ -367,6 +362,36 @@ namespace SS
         /// </summary>
         public override IList<string> SetContentsOfCell(string name, string content)
         {
+            //check for valid name
+            if (!IsValidName(name))
+                throw new InvalidNameException();
+
+            //check if content is a double
+            if (Double.TryParse(content, out double result))
+            {
+                return SetCellContents(name, result);
+            }
+            else
+            //check if its a formula
+            if (name.StartsWith('='))
+            {
+                String formula = name.Substring(1);
+                try
+                {
+                    return SetCellContents(name, new Formula(formula));
+                }
+                //Catches a FormulaFormatException or a CircularException
+                catch (Exception)
+                {
+                    throw;
+                }
+
+            }
+            else
+            //set it to a string
+            {
+                return SetCellContents(name, content);
+            }
             throw new NotImplementedException();
         }
 
@@ -397,7 +422,7 @@ namespace SS
         /// <returns></returns>
         private bool IsValidName(string s)
         {
-            return Regex.IsMatch(s, @"^[a-zA-Z_][a-zA-Z0-9_]*$");
+            return Regex.IsMatch(s, @"^[a-zA-Z]+[0-9]+$") && IsValid(s);
         }
 
       
@@ -415,6 +440,12 @@ namespace SS
                 get;
                 set;
             }  
+
+            public object Value
+            {
+                get;
+                set;
+            }
 
             /// <summary>
             /// Constructor that takes in some contents

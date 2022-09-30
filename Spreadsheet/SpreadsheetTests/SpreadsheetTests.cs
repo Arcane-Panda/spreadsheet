@@ -6,6 +6,19 @@ namespace SpreadsheetTests
     public class SpreadsheetTests
     {
         [TestMethod]
+        public void defaultConstructor()
+        { 
+            Spreadsheet s = new Spreadsheet();
+        }
+
+        [TestMethod]
+        public void ThreeArgConstructor()
+        {
+            Spreadsheet s = new Spreadsheet(x => true, x => x, "hello");
+            Assert.AreEqual("hello", s.Version);
+        }
+
+        [TestMethod]
         public void getContentsOfInvalidCell()
         {
             Spreadsheet s = new Spreadsheet();
