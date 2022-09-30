@@ -373,9 +373,9 @@ namespace SS
             }
             else
             //check if its a formula
-            if (name.StartsWith('='))
+            if (content[0].Equals('='))
             {
-                String formula = name.Substring(1);
+                String formula = content.Substring(1);
                 try
                 {
                     return SetCellContents(name, new Formula(formula));
