@@ -198,5 +198,109 @@ namespace SpreadsheetTests
             Assert.AreEqual(s2Cells[1], s1Cells[1]);
         }
 
+
+
+        //FORMULA VALUES
+        //Evaluation
+        [TestMethod]
+        public void InvalidVarLookup()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "=5 + notAVariable");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+        }
+
+        [TestMethod]
+        public void TestSingleNumber()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "=5");
+            Assert.AreEqual(5.0, s.GetCellValue("A1"));
+        }
+
+        [TestMethod]
+        public void TestSingleVariable()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "=13");
+            s.SetContentsOfCell("B1", "=A1");
+
+            Assert.AreEqual(13.0, s.GetCellValue("B1"));
+        }
+
+        [TestMethod]
+        public void TestSingleVariableWithReEvaluation()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("B1", "=A1");
+
+            Assert.IsInstanceOfType(s.GetCellValue("B1"), typeof(FormulaError) );
+
+            s.SetContentsOfCell("A1", "=13");
+
+            Assert.AreEqual(13.0, s.GetCellValue("B1"));
+        }
+
+        [TestMethod]
+        public void TestComplexMultiVar()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "=4");
+            s.SetContentsOfCell("B2", "=1");
+            s.SetContentsOfCell("C3", "=A1*3-8/2+4*(8-9*2)/14*B2");
+            Assert.AreEqual(5.142857142857142, s.GetCellValue("C3"));
+        }
+
+        [TestMethod]
+        public void TestRepeatedVar()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a4", "3");
+            s.SetContentsOfCell("B2", "=a4-a4*a4/a4");
+            Assert.AreEqual(0.0, s.GetCellValue("B2"));
+        }
+
+        [TestMethod]
+        public void TestComplexNestedParensLeft()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "=((((x1+x2)+x3)+x4)+x5)+x6");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
+            s.SetContentsOfCell("x1", "2");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
+            s.SetContentsOfCell("x2", "2");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
+            s.SetContentsOfCell("x3", "2");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
+            s.SetContentsOfCell("x4", "2");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
+            s.SetContentsOfCell("x5", "2");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
+            s.SetContentsOfCell("x6", "2");
+            Assert.AreEqual(12.0, s.GetCellValue("A1"));
+        }
+
+        [TestMethod]
+        public void TestReevaluating()
+        {
+            Spreadsheet s = new();
+
+            s.SetContentsOfCell("A1", "=B2 + 5");
+            s.SetContentsOfCell("B2", "2");
+            Assert.AreEqual(7.0, s.GetCellValue("A1"));
+
+            s.SetContentsOfCell("B2", "3");
+            Assert.AreEqual(8.0, s.GetCellValue("A1"));
+
+            s.SetContentsOfCell("B2", "hello");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+        }
+
     }
 }

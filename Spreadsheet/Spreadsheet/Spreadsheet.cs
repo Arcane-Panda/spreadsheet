@@ -237,14 +237,28 @@ namespace SS
                 dependencyGraph.ReplaceDependees(name, new List<string>());
 
                 nonEmpty[name].Contents = number;
-                return this.GetCellsToRecalculate(name).ToList();
+                nonEmpty[name].Value = number;
+
+                List<string> cellsToEvaluate = this.GetCellsToRecalculate(name).ToList();
+
+                //Try and evaluate all the cells that are directly/indirectly dependent on named cell
+                evaluateCells(cellsToEvaluate);
+
+                return cellsToEvaluate;
             }
             else
             {
                 //if the cell is empty, create a new cell with the contents and add it to the dictionary
                 //and then return the cells neede to recalculate
-                nonEmpty.Add(name, new Cell(number));
-                return this.GetCellsToRecalculate(name).ToList();
+                nonEmpty.Add(name, new Cell(number, number));
+                
+
+                List<string> cellsToEvaluate = this.GetCellsToRecalculate(name).ToList();
+
+                //Try and evaluate all the cells that are directly/indirectly dependent on named cell
+                evaluateCells(cellsToEvaluate);
+
+                return cellsToEvaluate;
             }
         }
 
@@ -276,14 +290,26 @@ namespace SS
                 dependencyGraph.ReplaceDependees(name, new List<string>());
 
                 nonEmpty[name].Contents = text;
-                return this.GetCellsToRecalculate(name).ToList();
+                nonEmpty[name].Value = text;
+                List<string> cellsToEvaluate = this.GetCellsToRecalculate(name).ToList();
+
+                //Try and evaluate all the cells that are directly/indirectly dependent on named cell
+                evaluateCells(cellsToEvaluate);
+
+                return cellsToEvaluate;
             }
             else
             {
                 //if the cell is empty, create a new cell with the contents and add it to the dictionary
                 //and then return the cells neede to recalculate
-                nonEmpty.Add(name, new Cell(text));
-                return this.GetCellsToRecalculate(name).ToList();
+                nonEmpty.Add(name, new Cell(text, text));
+
+                List<string> cellsToEvaluate = this.GetCellsToRecalculate(name).ToList();
+
+                //Try and evaluate all the cells that are directly/indirectly dependent on named cell
+                evaluateCells(cellsToEvaluate);
+
+                return cellsToEvaluate;
             }
         }
 
@@ -344,7 +370,7 @@ namespace SS
             else
             {
                 //if the cell is empty, create a new cell with the contents and add it to the dictionary
-                nonEmpty.Add(name, new Cell(formula));
+                nonEmpty.Add(name, new Cell(formula, formula.Evaluate(varLookUp)));
 
                 //add it to the dependency graph using the variables in the formula
                 dependencyGraph.ReplaceDependees(name, NewDependeeVars);
@@ -480,8 +506,8 @@ namespace SS
             try
             {
                 object value = this.GetCellValue(name);
-                if (Double.TryParse((string?)value, out double result))
-                    return result;
+                if (value is double)
+                    return (double) value;
                 else
                     //throws an argument exception if its not a double
                     throw new ArgumentException();
@@ -502,10 +528,18 @@ namespace SS
                 //get the cell out of the dictionary
                 if (nonEmpty.TryGetValue(names, out Cell? cell))
                 {
-                    //get the formula out of the cell
-                    Formula f = (Formula)cell.Contents;
-                    //evaluate the formula
-                    cell.Value = f.Evaluate(varLookUp);
+                    if (cell.Contents is Formula)
+                    {
+                        //get the formula out of the cell
+                        Formula f = (Formula)cell.Contents;
+                        //evaluate the formula
+                        cell.Value = f.Evaluate(varLookUp);
+                    }
+                    else if (cell.Contents is double)
+                    { 
+                        cell.Value = cell.Contents;
+                    }
+                    
                 }
             }
         }
@@ -534,9 +568,11 @@ namespace SS
             /// Constructor that takes in some contents
             /// </summary>
             /// <param name="contents"></param>
-            public Cell(object contents)
+            public Cell(object contents, object value)
             {
                 Contents = contents;
+                Value = value;
+
             }
         }
     }
