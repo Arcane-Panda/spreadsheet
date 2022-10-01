@@ -1,5 +1,7 @@
 using SS;
 using SpreadsheetUtilities;
+using System.Diagnostics;
+
 namespace SpreadsheetTests
 {
     [TestClass]
@@ -7,7 +9,7 @@ namespace SpreadsheetTests
     {
         [TestMethod]
         public void defaultConstructor()
-        { 
+        {
             Spreadsheet s = new Spreadsheet();
         }
 
@@ -31,6 +33,15 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             object result = s.GetCellContents("A1");
             Assert.AreEqual("", result);
+        }
+
+        [TestMethod]
+        public void setExplicitlyEmpty()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "");
+            Assert.IsFalse(s.Changed);
+
         }
 
         [TestMethod]
@@ -83,7 +94,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             s.SetContentsOfCell("A1", "0.4");
             s.SetContentsOfCell("A2", "0.4");
-            s.SetContentsOfCell("B31","0.4");
+            s.SetContentsOfCell("B31", "0.4");
             s.SetContentsOfCell("C4", "0.4");
 
             List<string> names = s.GetNamesOfAllNonemptyCells().ToList();
@@ -100,7 +111,7 @@ namespace SpreadsheetTests
         {
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "2");
-            s.SetContentsOfCell("B2", "=A1 + 3");       
+            s.SetContentsOfCell("B2", "=A1 + 3");
         }
 
         [TestMethod]
@@ -127,7 +138,7 @@ namespace SpreadsheetTests
             s.SetContentsOfCell("B2", "=A1 + 3");
             s.SetContentsOfCell("C3", "=B2 + 3");
 
-            List<string> recalc = s.SetContentsOfCell("A1","4").ToList();
+            List<string> recalc = s.SetContentsOfCell("A1", "4").ToList();
             Assert.AreEqual(3, recalc.Count);
             Assert.AreEqual("A1", recalc[0]);
             Assert.AreEqual("B2", recalc[1]);
@@ -234,7 +245,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             s.SetContentsOfCell("B1", "=A1");
 
-            Assert.IsInstanceOfType(s.GetCellValue("B1"), typeof(FormulaError) );
+            Assert.IsInstanceOfType(s.GetCellValue("B1"), typeof(FormulaError));
 
             s.SetContentsOfCell("A1", "=13");
 
@@ -286,6 +297,7 @@ namespace SpreadsheetTests
             Assert.AreEqual(12.0, s.GetCellValue("A1"));
         }
 
+
         [TestMethod]
         public void TestReevaluating()
         {
@@ -300,6 +312,7 @@ namespace SpreadsheetTests
 
             s.SetContentsOfCell("B2", "hello");
             Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+
         }
 
         //saving
@@ -310,9 +323,49 @@ namespace SpreadsheetTests
             s.SetContentsOfCell("A1", "5");
             s.SetContentsOfCell("B3", "=A1+2");
 
-            //  s.Save("testFile.json");
+            s.Save("testFile.json");
             Assert.AreEqual(5.0, s.GetCellValue("A1"));
         }
+
+        [TestMethod]
+        public void InvalidPath()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "5");
+            s.SetContentsOfCell("B3", "=A1+2");
+
+            Assert.ThrowsException<SpreadsheetReadWriteException>(() => s.Save("/some/nonsense/path.txt"));
+
+        }
+
+        [TestMethod]
+        public void loadFromFile()
+        {
+            string sheet = "{\r\n  \"cells\": {\r\n    \"A1\": {\r\n      \"stringForm\": \"5\"\r\n    },\r\n    \"B3\": {\r\n      \"stringForm\": \"=A1+2\"\r\n    }\r\n  },\r\n  \"Version\": \"default\"\r\n}";
+
+            File.WriteAllText("save.txt", sheet);
+
+            // NOTICE: opening the file created by this test (not a pre-existing file)
+            Spreadsheet s = new Spreadsheet("save.txt", s => true, s => s, "");
+
+            Assert.AreEqual(5.0, s.GetCellValue("A1"));
+            Assert.AreEqual(7.0, s.GetCellValue("B3"));
+        }
+
+        [TestMethod]
+        public void FailToLoadFromFile()
+        {
+            string sheet = "this is not json";
+
+            File.WriteAllText("save.txt", sheet);
+
+            // NOTICE: opening the file created by this test (not a pre-existing file)
+            Assert.ThrowsException<SpreadsheetReadWriteException>(
+                ()=>new Spreadsheet("save.txt", s => true, s => s, ""));
+
+            
+        }
+
 
     }
 }

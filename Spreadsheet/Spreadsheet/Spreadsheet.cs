@@ -1,6 +1,7 @@
 ﻿using SpreadsheetUtilities;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SS
 {
@@ -102,10 +103,34 @@ namespace SS
         {
             string jsonString = File.ReadAllText(path);
 
+            Spreadsheet? loaded;
+            try
+            {
+                loaded = JsonConvert.DeserializeObject<Spreadsheet>(jsonString);
+            }
+            catch (Exception)
+            {
 
-            nonEmpty = new();
-            dependencyGraph = new();
+                throw new SpreadsheetReadWriteException("Deseralization from file was null"); ;
+            }
+
+            if (loaded is null)
+            {
+                throw new SpreadsheetReadWriteException("Deseralization from file was null");
+            }
+
+            nonEmpty = loaded.nonEmpty;
+            dependencyGraph = loaded.dependencyGraph;
             Changed = false;
+
+            //go through all imported cells and fill in their values and contents
+            foreach (KeyValuePair<string, Cell> entry in nonEmpty)
+            {
+                
+                Cell cell = entry.Value;
+                this.SetContentsOfCell(entry.Key, cell.stringForm);
+
+            }
         }
 
        
@@ -217,15 +242,17 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
-          //  String serialized = JsonConvert.SerializeObject(this, Formatting.Indented);
+            //serialize this object
+            String serialized = JsonConvert.SerializeObject(this, Formatting.Indented);
             try
             {
-             //   File.WriteAllText(filename, serialized);
+                //write it to a file
+                File.WriteAllText(filename, serialized);
                 Changed = false;
             }
             catch (Exception e)
             {
-
+                //if it encounters any errors, throw
                 throw new SpreadsheetReadWriteException(e.Message);
             }
             
@@ -293,12 +320,7 @@ namespace SS
         /// <returns>List with name + names of all indirect or direct dependents</returns>
         /// <exception cref="InvalidNameException">Cell name was invalid</exception>
         protected override IList<string> SetCellContents(string name, string text)
-        {
-
-            //if trying to explicitily make a cell empty, dont do anything
-            if (text.Equals(""))
-                return new List<string>();
-
+        { 
             //if the cell is not empty, modify its contents and return the cells needed to recalculate
             if (nonEmpty.ContainsKey(name))
             {
@@ -444,11 +466,16 @@ namespace SS
         /// </summary>
         public override IList<string> SetContentsOfCell(string name, string content)
         {
+            //if trying to explicitily make a cell empty, dont do anything
+            if (content.Equals(""))
+                return new List<string>();
+
             name = Normalize(name);
             //check for valid name
             if (!IsValidName(name))
                 throw new InvalidNameException();
 
+            
             //check if content is a double
             if (Double.TryParse(content, out double result))
             {
@@ -567,21 +594,26 @@ namespace SS
         /// </summary>
         [JsonObject(MemberSerialization.OptIn)]
         private class Cell
-        { 
+        {
+            private object _contents;
             //contents of the cell
             public object Contents
             {
                 get
                 { 
-                    return this.Contents;
+                    return _contents;
                 }
                 set
                 {
-                    if (this.Contents is Formula)
+                    //updates the stringForm everytime the contents change
+                    if (value is Formula)
                     {
-                        stringForm = "=" + this.Contents.ToString();
-                    } else if(this.Contents is string || this.Contents is Double)
-                        stringForm = ""+this.Contents.ToString();
+                        stringForm = "=" + value.ToString();
+                    } else if(value is string || value is Double)
+                        stringForm = ""+value.ToString();
+                    
+                    //set Contents
+                    _contents = value;
                 }
             }  
 
@@ -599,10 +631,18 @@ namespace SS
             /// <param name="contents"></param>
             public Cell(object contents, object value)
             {
-                stringForm = "";
-                Contents = contents;
+                
+                _contents = contents;
                 Value = value;
 
+                if (contents is Formula)
+                {
+                    stringForm = "=" + contents.ToString();
+                }
+                else if (contents is string || contents is Double)
+                    stringForm = "" + contents.ToString();
+                else
+                    stringForm = "";
             }
         }
     }
