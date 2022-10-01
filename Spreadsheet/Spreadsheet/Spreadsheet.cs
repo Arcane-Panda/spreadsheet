@@ -100,6 +100,9 @@ namespace SS
         /// <param name="version"></param>
         public Spreadsheet(string path, Func<string, bool> validator, Func<string, string> normalizer, string version) : base(validator, normalizer, version)
         {
+            string jsonString = File.ReadAllText(path);
+
+
             nonEmpty = new();
             dependencyGraph = new();
             Changed = false;
@@ -214,11 +217,11 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
-            String serialized = JsonConvert.SerializeObject(this, Formatting.Indented);
-
+          //  String serialized = JsonConvert.SerializeObject(this, Formatting.Indented);
             try
             {
-                File.WriteAllText(filename, serialized);
+             //   File.WriteAllText(filename, serialized);
+                Changed = false;
             }
             catch (Exception e)
             {

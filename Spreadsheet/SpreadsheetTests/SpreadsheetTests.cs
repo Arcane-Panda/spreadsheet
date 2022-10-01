@@ -302,5 +302,17 @@ namespace SpreadsheetTests
             Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
         }
 
+        //saving
+        [TestMethod]
+        public void SaveSpreadsheet()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("A1", "5");
+            s.SetContentsOfCell("B3", "=A1+2");
+
+            //  s.Save("testFile.json");
+            Assert.AreEqual(5.0, s.GetCellValue("A1"));
+        }
+
     }
 }
