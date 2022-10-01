@@ -47,10 +47,12 @@ namespace SS
     /// For example, suppose that A1 contains B1*2, B1 contains C1*2, and C1 contains A1*2.
     /// A1 depends on B1, which depends on C1, which depends on A1.  That's a circular
     /// dependency.
-    /// </summary>
+    /// </summary> 
+    [JsonObject(MemberSerialization.OptIn)]
     public class Spreadsheet : AbstractSpreadsheet
     {
         //Dictionary containing all name -> cell pairings
+        [JsonProperty(PropertyName = "cells")]
         private Dictionary<string,Cell> nonEmpty;
 
         //Dependency graph containing all dependent/dependee relationships in the spreadsheet
@@ -212,7 +214,18 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
-            throw new NotImplementedException();
+            String serialized = JsonConvert.SerializeObject(this, Formatting.Indented);
+
+            try
+            {
+                File.WriteAllText(filename, serialized);
+            }
+            catch (Exception e)
+            {
+
+                throw new SpreadsheetReadWriteException(e.Message);
+            }
+            
         }
 
         /// <summary>
@@ -549,13 +562,24 @@ namespace SS
         /// 
         /// Currently, it only contains the Contents since for PS4 we are not worrying about value
         /// </summary>
+        [JsonObject(MemberSerialization.OptIn)]
         private class Cell
         { 
             //contents of the cell
             public object Contents
-            { 
-                get;
-                set;
+            {
+                get
+                { 
+                    return this.Contents;
+                }
+                set
+                {
+                    if (this.Contents is Formula)
+                    {
+                        stringForm = "=" + this.Contents.ToString();
+                    } else if(this.Contents is string || this.Contents is Double)
+                        stringForm = ""+this.Contents.ToString();
+                }
             }  
 
             public object Value
@@ -564,12 +588,15 @@ namespace SS
                 set;
             }
 
+            [JsonProperty]
+            public string stringForm;
             /// <summary>
             /// Constructor that takes in some contents
             /// </summary>
             /// <param name="contents"></param>
             public Cell(object contents, object value)
             {
+                stringForm = "";
                 Contents = contents;
                 Value = value;
 
