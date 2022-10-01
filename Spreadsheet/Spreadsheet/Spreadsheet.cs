@@ -142,7 +142,25 @@ namespace SS
         /// </summary>
         public override object GetCellValue(string name)
         {
-            throw new NotImplementedException();
+            name = Normalize(name);
+
+            //check for valid name
+            if (!IsValidName(name))
+            {
+                throw new InvalidNameException();
+            }
+
+            //if the cell is non-empty, return its value, otherwise return an empty string
+            if (nonEmpty.TryGetValue(name, out Cell? result))
+            {
+                
+                return result.Value;
+            }
+            else
+            {
+                return "";
+            }
+            
         }
 
         /// <summary>
@@ -307,7 +325,13 @@ namespace SS
                 //make sure that no circular dependency exists
                 try
                 {
-                    return this.GetCellsToRecalculate(name).ToList();
+                    
+                    List<string> cellsToEvaluate = this.GetCellsToRecalculate(name).ToList();
+
+                    //Try and evaluate all the cells that are directly/indirectly dependent on named cell
+                    evaluateCells(cellsToEvaluate);
+
+                    return cellsToEvaluate;
                 }
                 catch (CircularException e)
                 {
@@ -328,7 +352,12 @@ namespace SS
                 //make sure that no circular dependency exists
                 try
                 {
-                    return this.GetCellsToRecalculate(name).ToList();
+                    List<string> cellsToEvaluate = this.GetCellsToRecalculate(name).ToList();
+
+                    //Try and evaluate all the cells that are directly/indirectly dependent on named cell
+                    evaluateCells(cellsToEvaluate);
+
+                    return cellsToEvaluate;
                 }
                 catch (CircularException e)
                 {
@@ -439,7 +468,47 @@ namespace SS
             return Regex.IsMatch(s, @"^[a-zA-Z]+[0-9]+$") && IsValid(s);
         }
 
-      
+        /// <summary>
+        /// Lookup delegate to be used when evaluating cells
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        private double varLookUp(string name)
+        {
+            //looks up the cell's value by its name (which has already been normalized in Evaluate())
+            try
+            {
+                object value = this.GetCellValue(name);
+                if (Double.TryParse((string?)value, out double result))
+                    return result;
+                else
+                    //throws an argument exception if its not a double
+                    throw new ArgumentException();
+            }
+            catch (InvalidNameException)
+            {
+                //also throw if the variable cant be found
+                throw new ArgumentException(); ;
+            }
+            
+        }
+
+        private void evaluateCells(List<string> listOfCellNames)
+        {
+            //iterate through list
+            foreach (string names in listOfCellNames)
+            {
+                //get the cell out of the dictionary
+                if (nonEmpty.TryGetValue(names, out Cell? cell))
+                {
+                    //get the formula out of the cell
+                    Formula f = (Formula)cell.Contents;
+                    //evaluate the formula
+                    cell.Value = f.Evaluate(varLookUp);
+                }
+            }
+        }
 
         /// <summary>
         /// This class represents a non-empty cell in a spreadsheet
