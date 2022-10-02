@@ -120,7 +120,7 @@ namespace SS
             }
 
             nonEmpty = loaded.nonEmpty;
-            dependencyGraph = loaded.dependencyGraph;
+            dependencyGraph = new();
             Changed = false;
 
             //go through all imported cells and fill in their values and contents
