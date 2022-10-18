@@ -101,7 +101,17 @@ namespace SS
         /// <param name="version"></param>
         public Spreadsheet(string path, Func<string, bool> validator, Func<string, string> normalizer, string version) : base(validator, normalizer, version)
         {
-            string jsonString = File.ReadAllText(path);
+            string jsonString;
+            try
+            {
+                 jsonString = File.ReadAllText(path);
+            }
+            catch (Exception)
+            {
+
+                throw new SpreadsheetReadWriteException("Unable to find file to load");
+            }
+            
 
             Spreadsheet? loaded;
             try
