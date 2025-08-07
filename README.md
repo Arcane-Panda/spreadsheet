@@ -1,5 +1,4 @@
-A simple spreadsheet that consists of an infinite number of named cells.
-    /// 
+A simple spreadsheet that consists of an infinite number of named cells. 
     /// A string is a cell name if and only if it consists of one or more letters,
     /// followed by one or more digits AND it satisfies the predicate IsValid.
     /// For example, "A15", "a15", "XY032", and "BC7" are cell names so long as they
